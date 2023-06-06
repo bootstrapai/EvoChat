@@ -1,68 +1,259 @@
-<html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Chat with GPT</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+            rel="stylesheet"
+        />
         <style>
             #chatbox {
-                width: 500px;
+                width: 100%;
                 height: 500px;
-                border: 1px solid black;
                 overflow: auto;
             }
-            #userinput {
-                width: 500px;
+            .chat-message {
+                max-width: 80%;
+                display: inline-block;
+                padding: 10px;
+                border-radius: 10px;
+                margin-bottom: 4px;
+            }
+            .user-message {
+                background-color: #8eafe6;
+            }
+            .gpt-message {
+                background-color: #bde48c;
+            }
+            .gpt-message2 {
+                background-color: #fbd38d;
             }
         </style>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
     </head>
-    <body>
-        <h1>Chat with GPT</h1>
-        <input
-            id="apikey"
-            type="password"
-            placeholder="Enter your OpenAI API Key here"
-            onchange="saveAPIKey()"
-        />
-        <div id="chatbox"></div>
-        <textarea
-            id="userinput"
-            placeholder="Type your message here"
-            style="height: 103px; width: 498px"
-        ></textarea>
-        <button onclick="sendMessage()">Send</button>
+    <body class="bg-gray-100">
+        <div class="container mx-auto p-5">
+            <h1 class="mb-5 text-3xl">Chat with GPT</h1>
+            <input
+                id="apikey"
+                class="w-full mb-5 bg-white p-2 rounded"
+                type="password"
+                placeholder="Enter your OpenAI API Key here"
+            />
+            <div
+                id="chatbox"
+                class="bg-white rounded mb-5 p-5"
+                tabindex="0"
+            ></div>
+            <textarea
+                id="userinput"
+                class="w-full mb-5 bg-white p-2 rounded"
+                placeholder="Type your message here"
+                style="height: 128px"
+            ></textarea>
+
+            <div class="mb-5">
+                <label for="model-select">Model:</label>
+                <select id="model-select">
+                    <option value="gpt-4">GPT-4</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5-turbo</option>
+                    <option value="both">Both</option>
+                </select>
+
+                <label for="temperature">Temperature: </label>
+                <input
+                    id="temperature"
+                    type="number"
+                    value="0.7"
+                    step="0.1"
+                    min="0"
+                    max="1"
+                    class="ml-1 p-1"
+                />
+
+                <label for="maxTokens">Max Tokens: </label>
+                <input
+                    id="maxTokens"
+                    type="number"
+                    value="100"
+                    step="1"
+                    min="1"
+                    class="ml-1 p-1"
+                />
+            </div>
+            <button
+                class="bg-blue-500 text-white px-5 py-2 rounded"
+                onclick="sendMessage()"
+            >
+                Send
+            </button>
+            <button
+                class="bg-blue-500 text-white px-5 py-2 rounded ml-2"
+                onclick="savePrompt()"
+            >
+                Save Prompt
+            </button>
+            <label for="prompt-select">Load Prompt:</label>
+            <select id="prompt-select" class="ml-2"></select>
+            <button
+                class="bg-blue-500 text-white px-5 py-2 rounded ml-2"
+                onclick="loadPrompt()"
+            >
+                Load
+            </button>
+            <div id="iframesContainer" class="p-5 flex flex-wrap"></div>
+        </div>
 
         <script>
             var messages = [];
-            var converter = new showdown.Converter();
+            var messageHistory = [];
+            var messageIndex = 0;
+            var converter = new showdown.Converter({ ghCodeBlocks: true });
 
-            // Function to save API key in localStorage
-            function saveAPIKey() {
-                var apikey = document.getElementById("apikey").value;
-                localStorage.setItem("apikey", apikey);
+            function storeApiKey(apikey) {
+                localStorage.setItem("openai-api-key", apikey);
             }
 
-            // Load API key from localStorage if it exists
-            window.onload = function () {
-                var apikey = localStorage.getItem("apikey");
-                if (apikey) {
-                    document.getElementById("apikey").value = apikey;
+            function retrieveApiKey() {
+                return localStorage.getItem("openai-api-key");
+            }
+
+            function checkStoredApiKey() {
+                const storedApiKey = retrieveApiKey();
+                if (storedApiKey) {
+                    document.getElementById("apikey").value = storedApiKey;
                 }
-            };
-
-            // Function to copy chat history to clipboard
-            function copyToClipboard() {
-                var chatboxContent =
-                    document.getElementById("chatbox").innerHTML;
-                var dummy = document.createElement("textarea");
-                document.body.appendChild(dummy);
-                dummy.value = chatboxContent;
-                dummy.select();
-                document.execCommand("copy");
-                document.body.removeChild(dummy);
             }
+
+            function savePrompt() {
+                const promptName = prompt("Enter a name for the prompt:");
+                if (promptName) {
+                    localStorage.setItem(
+                        promptName,
+                        document.getElementById("userinput").value
+                    );
+                    alert("Prompt saved.");
+                    updatePromptDropdown();
+                }
+            }
+
+            function loadPrompt() {
+                const promptSelect = document.getElementById("prompt-select");
+                const promptName = promptSelect.value;
+                const storedPrompt = localStorage.getItem(promptName);
+                if (storedPrompt) {
+                    document.getElementById("userinput").value = storedPrompt;
+                }
+            }
+
+            function updatePromptDropdown() {
+                const promptSelect = document.getElementById("prompt-select");
+                promptSelect.innerHTML = "";
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key !== "openai-api-key" && key !== "config") {
+                        const option = document.createElement("option");
+                        option.value = key;
+                        option.textContent = key;
+                        promptSelect.appendChild(option);
+                    }
+                }
+            }
+
+            function insertPrompt(input) {
+                const promptName = input.replace("/", "");
+                const storedPrompt = localStorage.getItem(promptName);
+                if (storedPrompt) {
+                    return storedPrompt;
+                }
+                return input;
+            }
+
+            checkStoredApiKey();
+            updatePromptDropdown();
+
+            document
+                .getElementById("userinput")
+                .addEventListener("keydown", function (e) {
+                    if (
+                        e.ctrlKey &&
+                        (e.key === "ArrowUp" || e.key === "ArrowDown")
+                    ) {
+                        if (e.key === "ArrowUp" && messageIndex > 0) {
+                            messageIndex--;
+                        } else if (
+                            e.key === "ArrowDown" &&
+                            messageIndex < messageHistory.length - 1
+                        ) {
+                            messageIndex++;
+                        }
+                        this.value = messageHistory[messageIndex] || "";
+                    }
+                });
+
+            document
+                .getElementById("userinput")
+                .addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") {
+                        if (e.shiftKey) {
+                            // Allow new lines with Shift + Enter
+                        } else {
+                            e.preventDefault();
+                            sendMessage();
+                        }
+                    }
+                });
+
+            function storeConfig() {
+                localStorage.setItem(
+                    "config",
+                    JSON.stringify({
+                        model: document.getElementById("model-select").value,
+                        temperature:
+                            document.getElementById("temperature").value,
+                        maxTokens: document.getElementById("maxTokens").value,
+                    })
+                );
+            }
+
+            function retrieveConfig() {
+                return JSON.parse(localStorage.getItem("config"));
+            }
+
+            function checkStoredConfig() {
+                const storedConfig = retrieveConfig();
+                if (storedConfig) {
+                    document.getElementById("model-select").value =
+                        storedConfig.model;
+                    document.getElementById("temperature").value =
+                        storedConfig.temperature;
+                    document.getElementById("maxTokens").value =
+                        storedConfig.maxTokens;
+                }
+            }
+
+            checkStoredConfig();
 
             async function sendMessage() {
                 var apikey = document.getElementById("apikey").value;
+                if (!apikey) return;
+
+                storeApiKey(apikey);
+
+                var model = document.getElementById("model-select").value;
+                var temperature =
+                    parseFloat(document.getElementById("temperature").value) ||
+                    0.7;
+                var maxTokens =
+                    parseInt(document.getElementById("maxTokens").value) || 100;
+
+                storeConfig();
+
                 var input = document.getElementById("userinput").value;
+                messageHistory.push(input);
+                messageIndex = messageHistory.length;
+
                 var chatbox = document.getElementById("chatbox");
 
                 if (input.includes("/source/")) {
@@ -74,15 +265,43 @@
                     );
                 }
 
+                if (input.includes("/")) {
+                    input = insertPrompt(input);
+                }
+
                 messages.push({
                     role: "system",
                     content: "You are now chatting with GPT-4",
                 });
                 messages.push({ role: "user", content: input });
 
-                chatbox.innerHTML +=
-                    "<p><b>You:</b> " + converter.makeHtml(input) + "</p>";
+                const userMessage = `<div class="chat-message user-message mb-2">
+          <p class="mb-1 font-bold">You:</p>
+          ${converter.makeHtml(input)}
+      </div>`;
+                const newRow = document.createElement("div");
+                newRow.className = "w-full mb-2";
+                newRow.innerHTML = userMessage;
+                chatbox.appendChild(newRow);
 
+                chatbox.scrollTop = chatbox.scrollHeight;
+
+                if (model === "both") {
+                    await sendRequest("gpt-4", apikey, temperature, maxTokens);
+                    await sendRequest(
+                        "gpt-3.5-turbo",
+                        apikey,
+                        temperature,
+                        maxTokens
+                    );
+                } else {
+                    await sendRequest(model, apikey, temperature, maxTokens);
+                }
+
+                document.getElementById("userinput").value = "";
+            }
+
+            async function sendRequest(model, apikey, temperature, maxTokens) {
                 var response = await fetch(
                     "https://api.openai.com/v1/chat/completions",
                     {
@@ -92,8 +311,10 @@
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
-                            model: "gpt-4",
+                            model: model,
                             messages: messages,
+                            temperature: temperature,
+                            max_tokens: maxTokens,
                         }),
                     }
                 );
@@ -107,17 +328,80 @@
                 ) {
                     var message = data["choices"][0]["message"]["content"];
                     messages.push({ role: "assistant", content: message });
-                    chatbox.innerHTML +=
-                        "<p><b>GPT:</b> " +
-                        converter.makeHtml(message) +
-                        "</p>";
+
+                    let htmlMessage = converter.makeHtml(message);
+                    if (htmlMessage.includes('class="html language-html"')) {
+                        let spawnButton =
+                            '<button class="bg-blue-500 text-white py-1 px-2 ml-2 rounded" onclick="spawnIframe(this)">Spawn</button>';
+                        let copyButton =
+                            '<button class="bg-blue-500 text-white py-1 px-2 ml-2 rounded" onclick="copyToClipboard(this)">Copy</button>';
+                        htmlMessage = htmlMessage.replace(
+                            "</code></pre>",
+                            "</code></pre>" + spawnButton + copyButton
+                        );
+                    }
+                    const gptClass =
+                        model === "gpt-4" ? "gpt-message" : "gpt-message2";
+                    const gptLabel =
+                        model === "gpt-4" ? "GPT-4" : "GPT-3.5-turbo";
+                    const gptMessage = `<div class="chat-message ${gptClass} mb-2">
+            <p class="mb-1 font-bold">${gptLabel}:</p>
+            ${htmlMessage}
+        </div>`;
+                    const newRow = document.createElement("div");
+                    newRow.className = "w-full mb-2";
+                    newRow.innerHTML = gptMessage;
+                    chatbox.appendChild(newRow);
+
+                    chatbox.focus();
                     chatbox.scrollTop = chatbox.scrollHeight;
-
-                    // Call the copyToClipboard function
-                    copyToClipboard();
                 }
+            }
 
-                document.getElementById("userinput").value = "";
+            function spawnIframe(button) {
+                const codeBlock = button.previousSibling;
+                const htmlCode = codeBlock.textContent;
+                const iframesContainer =
+                    document.getElementById("iframesContainer");
+
+                const iframeContainer = document.createElement("div");
+                iframeContainer.className =
+                    "iframeContainer mr-4 mb-5 relative w-full";
+
+                const iframe = document.createElement("iframe");
+                iframe.width = "100%";
+                iframe.height = "500";
+                iframe.srcdoc = htmlCode;
+                iframe.className = "rounded shadow";
+
+                const closeButton = document.createElement("button");
+                closeButton.className =
+                    "closeIframe absolute text-white py-1 px-2 bg-red-500 hover:bg-red-700 rounded top-0 right-0 m-1";
+                closeButton.innerHTML = "X";
+                closeButton.onclick = function () {
+                    if (
+                        confirm("Are you sure you want to close this iframe?")
+                    ) {
+                        iframesContainer.removeChild(iframeContainer);
+                    }
+                };
+
+                iframeContainer.appendChild(closeButton);
+                iframeContainer.appendChild(iframe);
+                iframesContainer.appendChild(iframeContainer);
+            }
+
+            function copyToClipboard(button) {
+                const codeBlock = button.previousSibling.previousSibling;
+                const htmlCode = codeBlock.textContent;
+                navigator.clipboard.writeText(htmlCode).then(
+                    function () {
+                        alert("HTML code copied to clipboard!");
+                    },
+                    function (err) {
+                        alert("Could not copy HTML code. Error: " + err);
+                    }
+                );
             }
         </script>
     </body>
