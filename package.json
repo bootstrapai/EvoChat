@@ -1,0 +1,22 @@
+{
+  "name": "evochat",
+  "version": "1.0.0",
+  "description": "This is a simple web application that allows you to chat with OpenAI's GPT models, including GPT-4 and GPT-3.5-turbo.  It is designed to provide a convenient interface for interacting with the models, as well as additional features for  managing prompts and rendering HTML code.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bootstrapai/EvoChat.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bootstrapai/EvoChat/issues"
+  },
+  "homepage": "https://github.com/bootstrapai/EvoChat#readme",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
