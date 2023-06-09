@@ -4,6 +4,22 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
 
 
+<style>
+    .message {
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 4px;
+    }
+    .user-message {
+        background-color: #e0f7fa;
+    }
+    .gpt-message {
+        background-color: #f1f8e9;
+    }
+    .system-message {
+        background-color: #fff3e0;
+    }
+</style>
 <script type="module">
   import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
   import { createOrUpdateTextFile } from "https://cdn.skypack.dev/@octokit/plugin-create-or-update-text-file";
@@ -11,11 +27,11 @@
   window.Octokit = Octokit;
   window.createOrUpdateTextFile = createOrUpdateTextFile;
 </script>
-
-<script async="false" type="text/javascript" src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"></script><script async="false" type="text/javascript" src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"></script></head>
+</head>
     <body class="flex">
         <div class="w-1/2 flex flex-col h-screen box-border p-4">
-            <div id="chatbox" class="h-[calc(100vh-50vh)] w-full flex-grow border mb-4 rounded p-2 box-border overflow-auto"></div>
+
+<div id="chatbox" class="h-[calc(100vh-50vh)] w-full flex-grow border mb-4 rounded p-2 box-border overflow-auto" contenteditable="true"></div>
             <textarea id="userinput" placeholder="Type your message here" class="w-full h-24 p-2 mb-4 border rounded box-border"></textarea>
             <div class="flex flex-col space-y-4">
                 <button onclick="sendMessage()" class="px-4 py-2 border rounded bg-blue-500 text-white">
@@ -75,9 +91,9 @@
 <div id="source-code-config-panel" class="hidden flex flex-col space-y-4 mb-4">
  
   <label for="token">Personal Access Token:</label>
-  <input id="token" type="password" placeholder="Enter your personal access token here" class="w-full p-2 border rounded mb-2">
+  <input id="token" type="password" placeholder="Enter your personal access token here" onchange="saveGitHubConfig()" class="w-full p-2 border rounded mb-2">
   <label for="repo">Organization/Repo Name:</label>
-  <input id="repo" type="text" placeholder="Enter organization/repo name here" class="w-full p-2 border rounded mb-4">
+  <input id="repo" type="text" placeholder="Enter organization/repo name here" onchange="saveGitHubConfig()" class="w-full p-2 border rounded mb-4">
 </div>
             </div>
         
@@ -92,11 +108,31 @@
             }
 
 
+function addSystemMessage(content) {
+    var chatbox = document.getElementById("chatbox");
+    var systemMessageEl = document.createElement("p");
+    systemMessageEl.className = "message system-message";
+    systemMessageEl.innerHTML = '<b>System:</b> ' + content;
+    chatbox.appendChild(systemMessageEl);
+    messages.push({ role: "system", content: content });
+}
 window.onload = function () {
     var apikey = localStorage.getItem("apikey");
     if (apikey) {
         document.getElementById("apikey").value = apikey;
     }
+
+  // Store the initial HTML content before it gets manipulated later
+  const initialHTML = document.documentElement.outerHTML;
+
+  // Add the system message
+  let chatbox = document.getElementById("chatbox");
+  addSystemMessage("You are ChatGPT, a large language model trained by OpenAI. Follow the user's instructions carefully. Respond using markdown.");
+
+  // Set the content of the editor
+  const editor = document.getElementById("editor");
+  editor.innerText = initialHTML;
+
 
     // Retrieve configuration values from local storage
     var modelValue = localStorage.getItem("model");
@@ -134,8 +170,23 @@ window.onload = function () {
         document.getElementById("frequencypenalty").value = frequencypenaltyValue;
     }
 
-    document.getElementById("editor").innerText =
-        document.documentElement.outerHTML;
+document.getElementById("chatbox").addEventListener("input", function (e) {
+    let newMessageElements = e.target.children;
+    messages = [];
+
+    for (let i = 0; i < newMessageElements.length; i++) {
+        let role;
+        if (newMessageElements[i].classList.contains("user-message")) role = "user";
+        else if (newMessageElements[i].classList.contains("gpt-message")) role = "assistant";
+        else if (newMessageElements[i].classList.contains("system-message")) role = "system";
+
+        if (role) {
+            let content = newMessageElements[i].textContent.replace(/^\w+:\s*/, '');
+            messages.push({ role: role, content: content });
+        }
+    }
+});
+
 };
 
             async function sendMessage() {
@@ -162,15 +213,14 @@ window.onload = function () {
                     );
                 }
 
-                messages.push({
-                    role: "system",
-                    content: "You are now chatting with GPT-4",
-                });
                 messages.push({ role: "user", content: input });
 
-                chatbox.innerHTML +=
-                    "<p><b>You:</b> " + converter.makeHtml(input) + "</p>";
 
+
+var userMessageEl = document.createElement("p");
+userMessageEl.className = "message user-message";
+userMessageEl.innerHTML = '<b>You:</b> ' + converter.makeHtml(input);
+chatbox.appendChild(userMessageEl);
                 var maxtokens = parseInt(
                     document.getElementById("maxtokens").value
                 );
@@ -214,14 +264,16 @@ window.onload = function () {
                 ) {
                     var message = data["choices"][0]["message"]["content"];
                     messages.push({ role: "assistant", content: message });
-                    chatbox.innerHTML +=
-                        "<p><b>GPT:</b> " +
-                        converter.makeHtml(message) +
-                        "</p>";
-                    chatbox.scrollTop = chatbox.scrollHeight;
+
+
+var gptMessageEl = document.createElement("p");
+gptMessageEl.className = "message gpt-message";
+gptMessageEl.innerHTML = '<b>GPT:</b> ' + converter.makeHtml(message);
+chatbox.appendChild(gptMessageEl);
                 }
 
                 document.getElementById("userinput").value = "";
+
             }
 
             function spawnContent() {
