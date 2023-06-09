@@ -1,10 +1,6 @@
-<html>
-  <head>
+<html><head>
     <title>Chat with GPT</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
 
     <style>
@@ -30,49 +26,29 @@
       window.Octokit = Octokit;
       window.createOrUpdateTextFile = createOrUpdateTextFile;
     </script>
-    <script
-      async="false"
-      type="text/javascript"
-      src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"
-    ></script>
+    <script async="false" type="text/javascript" src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"></script>
   </head>
   <body class="flex">
     <div class="w-1/2 flex flex-col h-screen box-border p-4">
-      <div
-        id="chatbox"
-        class="h-[calc(100vh-50vh)] w-full flex-grow border mb-4 rounded p-2 box-border overflow-auto"
-        contenteditable="true"
-      ></div>
-      <textarea
-        id="userinput"
-        placeholder="Type your message here"
-        class="w-full h-24 p-2 mb-4 border rounded box-border"
-      ></textarea>
+
+<div id="chatbox" class="h-[calc(100vh-50vh)] w-full flex-grow border mb-4 rounded p-2 box-border overflow-auto">
+  <div contenteditable="true"></div>
+</div>
+
+      <textarea id="userinput" placeholder="Type your message here" class="w-full h-24 p-2 mb-4 border rounded box-border"></textarea>
       <div class="flex flex-col space-y-4">
-        <button
-          onclick="sendMessage()"
-          class="px-4 py-2 border rounded bg-blue-500 text-white"
-        >
+        <button onclick="sendMessage()" class="px-4 py-2 border rounded bg-blue-500 text-white">
           Send Message
         </button>
 
-        <button
-          onclick="toggleConfigPanel();"
-          class="px-4 py-2 border rounded bg-gray-400 text-white"
-        >
+        <button onclick="toggleConfigPanel();" class="px-4 py-2 border rounded bg-gray-400 text-white">
           Toggle Configuration Panel
         </button>
       </div>
 
       <div id="config-panel" class="hidden flex flex-col space-y-4 mt-4">
         <label for="apikey">OpenAI API Key:</label>
-        <input
-          id="apikey"
-          type="password"
-          placeholder="Enter your OpenAI API Key here"
-          onchange="saveAPIKey()"
-          class="w-full p-2 border rounded"
-        />
+        <input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" onchange="saveAPIKey()" class="w-full p-2 border rounded">
 
         <label for="model">Model:</label>
         <select id="model" class="w-full p-2 border rounded">
@@ -81,113 +57,45 @@
         </select>
 
         <label for="maxtokens">Max Tokens: </label>
-        <input
-          id="maxtokens"
-          type="number"
-          value="4000"
-          class="w-full p-2 border rounded"
-        />
+        <input id="maxtokens" type="number" value="4000" class="w-full p-2 border rounded">
 
         <label for="temperature">Temperature: </label>
-        <input
-          id="temperature"
-          type="number"
-          step="0.1"
-          value="1"
-          min="0"
-          max="2"
-          class="w-full p-2 border rounded"
-        />
+        <input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded">
 
         <label for="topp">Top-p: </label>
-        <input
-          id="topp"
-          type="number"
-          value="1"
-          step="0.1"
-          min="0"
-          max="1"
-          class="w-full p-2 border rounded"
-        />
+        <input id="topp" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded">
 
         <label for="presencepenalty">Presence Penalty: </label>
-        <input
-          id="presencepenalty"
-          type="number"
-          value="0"
-          step="0.1"
-          min="-2"
-          max="2"
-          class="w-full p-2 border rounded"
-        />
+        <input id="presencepenalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
 
         <label for="frequencypenalty">Frequency Penalty: </label>
-        <input
-          id="frequencypenalty"
-          type="number"
-          value="0"
-          step="0.1"
-          min="-2"
-          max="2"
-          class="w-full p-2 border rounded"
-        />
+        <input id="frequencypenalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
       </div>
     </div>
 
     <div class="w-1/2 flex flex-col h-screen p-4 box-border">
       <h2 class="text-lg font-bold mb-4">Source Code Editor</h2>
-      <div
-        id="editor"
-        contenteditable="true"
-        class="w-full flex-grow border rounded p-2 whitespace-pre-wrap overflow-auto font-mono mb-4"
-      ></div>
+      <div id="editor" contenteditable="true" class="w-full flex-grow border rounded p-2 whitespace-pre-wrap overflow-auto font-mono mb-4"></div>
 
       <div class="flex space-x-2">
-        <button
-          onclick="spawnContent()"
-          class="px-4 py-2 border rounded mr-2 bg-blue-500 text-white"
-        >
+        <button onclick="spawnContent()" class="px-4 py-2 border rounded mr-2 bg-blue-500 text-white">
           Spawn
         </button>
-        <button
-          onclick="copyContent()"
-          class="px-4 py-2 border rounded bg-green-500 text-white"
-        >
+        <button onclick="copyContent()" class="px-4 py-2 border rounded bg-green-500 text-white">
           Copy
         </button>
-        <button
-          onclick="commitContent()"
-          class="px-4 py-2 border rounded bg-yellow-500 text-white"
-        >
+        <button onclick="commitContent()" class="px-4 py-2 border rounded bg-yellow-500 text-white">
           Commit
         </button>
       </div>
-      <button
-        onclick="toggleSourceCodeConfigPanel();"
-        class="px-4 py-2 border rounded bg-gray-400 text-white mb-4"
-      >
+      <button onclick="toggleSourceCodeConfigPanel();" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">
         Toggle Configuration Panel
       </button>
-      <div
-        id="source-code-config-panel"
-        class="hidden flex flex-col space-y-4 mb-4"
-      >
+      <div id="source-code-config-panel" class="hidden flex flex-col space-y-4 mb-4">
         <label for="token">Personal Access Token:</label>
-        <input
-          id="token"
-          type="password"
-          placeholder="Enter your personal access token here"
-          onchange="saveGitHubConfig()"
-          class="w-full p-2 border rounded mb-2"
-        />
+        <input id="token" type="password" placeholder="Enter your personal access token here" onchange="saveGitHubConfig()" class="w-full p-2 border rounded mb-2">
         <label for="repo">Organization/Repo Name:</label>
-        <input
-          id="repo"
-          type="text"
-          placeholder="Enter organization/repo name here"
-          onchange="saveGitHubConfig()"
-          class="w-full p-2 border rounded mb-4"
-        />
+        <input id="repo" type="text" placeholder="Enter organization/repo name here" onchange="saveGitHubConfig()" class="w-full p-2 border rounded mb-4">
       </div>
     </div>
 
@@ -220,7 +128,10 @@
         // Add the system message
         let chatbox = document.getElementById("chatbox");
         addSystemMessage(
-          "You are ChatGPT, a large language model trained by OpenAI. Follow the user's instructions carefully. Respond using markdown."
+          `You are an expert web developer with an IQ of 120. 
+The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
+You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature.
+You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.`
         );
 
         // Set the content of the editor
@@ -378,6 +289,13 @@
           gptMessageEl.className = "message gpt-message";
           gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
           chatbox.appendChild(gptMessageEl);
+var regenerateButton = document.createElement("button");
+regenerateButton.innerText = "Regenerate";
+regenerateButton.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
+regenerateButton.addEventListener("click", () => {
+  regenerateMessage(messages.length - 1);
+});
+gptMessageEl.appendChild(regenerateButton);
         }
 
         document.getElementById("userinput").value = "";
@@ -390,6 +308,56 @@
         window.open(url, "_blank");
       }
 
+
+async function regenerateMessage(index) {
+  var apikey = document.getElementById("apikey").value;
+  var model = document.getElementById("model").value;
+  var maxtokens = parseInt(document.getElementById("maxtokens").value);
+  var temperature = parseFloat(document.getElementById("temperature").value);
+  var topp = parseFloat(document.getElementById("topp").value);
+  var presencepenalty = parseFloat(document.getElementById("presencepenalty").value);
+  var frequencypenalty = parseFloat(document.getElementById("frequencypenalty").value);
+
+  // Get the Generate button and change its properties
+  var regenerateButton = document.querySelectorAll("button.ml-2")[index - (messages.findIndex(message => message.role === "assistant"))];
+  regenerateButton.disabled = true;
+  regenerateButton.innerText = "Regenerating...";
+
+  var response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + apikey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: messages.slice(0, index),
+      max_tokens: maxtokens,
+      temperature: temperature,
+      top_p: topp,
+      presence_penalty: presencepenalty,
+      frequency_penalty: frequencypenalty,
+    }),
+  });
+
+  var data = await response.json();
+
+  if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
+    var message = data["choices"][0]["message"]["content"];
+    messages[index].content = message;
+
+    var gptMessageEl = document.querySelectorAll("p.gpt-message")[index - (messages.findIndex(message => message.role === "assistant"))];
+    gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
+
+    // Restore the Regenerate button properties
+    regenerateButton.disabled = false;
+    regenerateButton.innerText = "Regenerate";
+    gptMessageEl.appendChild(regenerateButton);
+  } else {
+    regenerateButton.disabled = false;
+    regenerateButton.innerText = "Regenerate";
+  }
+}
       function copyContent() {
         var editor = document.getElementById("editor");
         var range = document.createRange();
@@ -463,5 +431,5 @@
         }
       }
     </script>
-  </body>
-</html>
+  
+</body></html>
