@@ -178,33 +178,6 @@ You will not include any disclaimers, warnings, or unnecessary elaboration, as i
           document.getElementById("frequencypenalty").value =
             frequencypenaltyValue;
         }
-
-        document
-          .getElementById("chatbox")
-          .addEventListener("input", function (e) {
-            let newMessageElements = e.target.children;
-            messages = [];
-
-            for (let i = 0; i < newMessageElements.length; i++) {
-              let role;
-              if (newMessageElements[i].classList.contains("user-message"))
-                role = "user";
-              else if (newMessageElements[i].classList.contains("gpt-message"))
-                role = "assistant";
-              else if (
-                newMessageElements[i].classList.contains("system-message")
-              )
-                role = "system";
-
-              if (role) {
-                let content = newMessageElements[i].textContent.replace(
-                  /^\w+:\s*/,
-                  ""
-                );
-                messages.push({ role: role, content: content });
-              }
-            }
-          });
       };
 
       async function sendMessage() {
