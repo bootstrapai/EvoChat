@@ -27,7 +27,7 @@
       window.createOrUpdateTextFile = createOrUpdateTextFile;
     </script>
     <script async="false" type="text/javascript" src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"></script>
-  </head>
+  <script async="false" type="text/javascript" src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"></script></head>
   <body class="flex">
     <div class="w-1/2 flex flex-col h-screen box-border p-4">
 
@@ -87,6 +87,9 @@
         <button onclick="commitContent()" class="px-4 py-2 border rounded bg-yellow-500 text-white">
           Commit
         </button>
+<button onclick="refreshContent()" class="px-4 py-2 border rounded bg-purple-500 text-white">
+  Refresh
+</button>
       </div>
       <button onclick="toggleSourceCodeConfigPanel();" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">
         Toggle Configuration Panel
@@ -123,7 +126,7 @@
         }
 
         // Store the initial HTML content before it gets manipulated later
-        const initialHTML = document.documentElement.outerHTML;
+        initialHTML = document.documentElement.outerHTML;
 
         // Add the system message
         let chatbox = document.getElementById("chatbox");
@@ -430,6 +433,11 @@ async function regenerateMessage(index) {
           sourceCodeConfigPanel.classList.add("hidden");
         }
       }
+
+
+function refreshContent() {
+  document.getElementById("editor").innerText = initialHTML;
+}
     </script>
   
 </body></html>
