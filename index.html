@@ -114,6 +114,12 @@
       function addSystemMessage(content) {
         var chatbox = document.getElementById("chatbox");
         var systemMessageEl = document.createElement("p");
+
+systemMessageEl.setAttribute("contenteditable", "true");
+systemMessageEl.addEventListener("input", () => {
+  messages[messages.length - 1].content = systemMessageEl.textContent;
+});
+
         systemMessageEl.className = "message system-message";
         systemMessageEl.innerHTML = "<b>System:</b> " + content;
         chatbox.appendChild(systemMessageEl);
@@ -180,103 +186,128 @@ You will not include any disclaimers, warnings, or unnecessary elaboration, as i
         }
       };
 
-      async function sendMessage() {
-        var apikey = document.getElementById("apikey").value;
-        var input = document.getElementById("userinput").value;
-        var chatbox = document.getElementById("chatbox");
-        var model = document.getElementById("model").value;
+async function sendMessage() {
+  var apikey = document.getElementById("apikey").value;
+  var input = document.getElementById("userinput").value;
+  var chatbox = document.getElementById("chatbox");
+  var model = document.getElementById("model").value;
 
-        // Save configuration values to local storage
-        localStorage.setItem("model", model);
-        localStorage.setItem(
-          "maxtokens",
-          document.getElementById("maxtokens").value
-        );
-        localStorage.setItem(
-          "temperature",
-          document.getElementById("temperature").value
-        );
-        localStorage.setItem("topp", document.getElementById("topp").value);
-        localStorage.setItem(
-          "presencepenalty",
-          document.getElementById("presencepenalty").value
-        );
-        localStorage.setItem(
-          "frequencypenalty",
-          document.getElementById("frequencypenalty").value
-        );
+  // Save configuration values to local storage
+  localStorage.setItem("model", model);
+  localStorage.setItem(
+    "maxtokens",
+    document.getElementById("maxtokens").value
+  );
+  localStorage.setItem(
+    "temperature",
+    document.getElementById("temperature").value
+  );
+  localStorage.setItem("topp", document.getElementById("topp").value);
+  localStorage.setItem(
+    "presencepenalty",
+    document.getElementById("presencepenalty").value
+  );
+  localStorage.setItem(
+    "frequencypenalty",
+    document.getElementById("frequencypenalty").value
+  );
 
-        if (input.includes("/source/")) {
-          input = input.replace(
-            "/source/",
-            "```html\n" + document.getElementById("editor").innerText + "\n```"
-          );
-        }
+  if (input.includes("/source/")) {
+    input = input.replace(
+      "/source/",
+      "```html\n" + document.getElementById("editor").innerText + "\n```"
+    );
+  }
 
-        messages.push({ role: "user", content: input });
+  messages.push({ role: "user", content: input });
 
-        var userMessageEl = document.createElement("p");
-        userMessageEl.className = "message user-message";
-        userMessageEl.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
-        chatbox.appendChild(userMessageEl);
-        var maxtokens = parseInt(document.getElementById("maxtokens").value);
-        var temperature = parseFloat(
-          document.getElementById("temperature").value
-        );
-        var topp = parseFloat(document.getElementById("topp").value);
-        var presencepenalty = parseFloat(
-          document.getElementById("presencepenalty").value
-        );
-        var frequencypenalty = parseFloat(
-          document.getElementById("frequencypenalty").value
-        );
+  var userMessageEl = document.createElement("p");
+  userMessageEl.className = "message user-message";
+  userMessageEl.setAttribute("contenteditable", "true");
+  userMessageEl.addEventListener("input", () => {
+    messages[messages.length - 1].content = userMessageEl.textContent;
+  });
+  userMessageEl.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
+  chatbox.appendChild(userMessageEl);
 
-        var response = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              Authorization: "Bearer " + apikey,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: model, // Use selected model
-              messages: messages,
-              max_tokens: maxtokens,
-              temperature: temperature,
-              top_p: topp,
-              presence_penalty: presencepenalty,
-              frequency_penalty: frequencypenalty,
-            }),
-          }
-        );
+  var maxtokens = parseInt(document.getElementById("maxtokens").value);
+  var temperature = parseFloat(
+    document.getElementById("temperature").value
+  );
+  var topp = parseFloat(document.getElementById("topp").value);
+  var presencepenalty = parseFloat(
+    document.getElementById("presencepenalty").value
+  );
+  var frequencypenalty = parseFloat(
+    document.getElementById("frequencypenalty").value
+  );
 
-        var data = await response.json();
+  var response = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + apikey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: model, // Use selected model
+        messages: getMessagesFromDOM(),
+        max_tokens: maxtokens,
+        temperature: temperature,
+        top_p: topp,
+        presence_penalty: presencepenalty,
+        frequency_penalty: frequencypenalty,
+      }),
+    }
+  );
 
-        if (
-          data["choices"] &&
-          data["choices"][0] &&
-          data["choices"][0]["message"]
-        ) {
-          var message = data["choices"][0]["message"]["content"];
-          messages.push({ role: "assistant", content: message });
+  var data = await response.json();
 
-          var gptMessageEl = document.createElement("p");
-          gptMessageEl.className = "message gpt-message";
-          gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
-          chatbox.appendChild(gptMessageEl);
-var regenerateButton = document.createElement("button");
-regenerateButton.innerText = "Regenerate";
-regenerateButton.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
-regenerateButton.addEventListener("click", () => {
-  regenerateMessage(messages.length - 1);
-});
-gptMessageEl.appendChild(regenerateButton);
-        }
+  if (
+    data["choices"] &&
+    data["choices"][0] &&
+    data["choices"][0]["message"]
+  ) {
+    var message = data["choices"][0]["message"]["content"];
+    messages.push({ role: "assistant", content: message });
 
-        document.getElementById("userinput").value = "";
-      }
+    var gptMessageEl = document.createElement("p");
+    gptMessageEl.className = "message gpt-message";
+    gptMessageEl.setAttribute("contenteditable", "true");
+    gptMessageEl.addEventListener("input", () => {
+      messages[messages.length - 1].content = gptMessageEl.textContent;
+    });
+    gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
+    chatbox.appendChild(gptMessageEl);
+    var regenerateButton = document.createElement("button");
+    regenerateButton.innerText = "Regenerate";
+    regenerateButton.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
+    regenerateButton.addEventListener("click", () => {
+      regenerateMessage(messages.length - 1);
+    });
+    gptMessageEl.appendChild(regenerateButton);
+  }
 
+  document.getElementById("userinput").value = "";
+}
+function getMessagesFromDOM() {
+  const chatbox = document.getElementById("chatbox");
+  const messageElements = chatbox.querySelectorAll("p.message");
+  const messagesFromDOM = [];
+
+  messageElements.forEach((messageEl) => {
+    const role = messageEl.classList.contains("user-message")
+      ? "user"
+      : messageEl.classList.contains("gpt-message")
+      ? "assistant"
+      : "system";
+    const content = messageEl.textContent;
+    messagesFromDOM.push({ role, content });
+  });
+
+  return messagesFromDOM;
+}
       function spawnContent() {
         var content = document.getElementById("editor").innerText;
         var blob = new Blob([content], { type: "text/html" });
@@ -307,7 +338,7 @@ async function regenerateMessage(index) {
     },
     body: JSON.stringify({
       model: model,
-      messages: messages.slice(0, index),
+      messages: getMessagesFromDOM().slice(0, index + 1),
       max_tokens: maxtokens,
       temperature: temperature,
       top_p: topp,
