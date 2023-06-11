@@ -215,6 +215,8 @@
       async function sendMessage() {
         var apikey = document.getElementById("apikey").value;
         var input = document.getElementById("userinput").value;
+        input = input.replace(/^\/source\/$/m, "```html\n" + document.getElementById("editor").innerText + "\n```");
+
         var chatbox = document.getElementById("chatbox");
         var model = document.getElementById("model").value;
         var numresponses = parseInt(document.getElementById("numresponses").value);
