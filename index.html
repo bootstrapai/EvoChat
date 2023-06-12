@@ -112,347 +112,348 @@
     </div>
 
     <script>
-                            var messages = [];
-                            var converter = new showdown.Converter();
+                                  var messages = [];
+                                  var converter = new showdown.Converter();
 
-                            function saveAPIKey() {
-                              var apikey = document.getElementById("apikey").value;
-                              localStorage.setItem("apikey", apikey);
-                            }
+                                  function saveAPIKey() {
+                                    var apikey = document.getElementById("apikey").value;
+                                    localStorage.setItem("apikey", apikey);
+                                  }
 
-                            function addSystemMessage(content) {
-                              var chatbox = document.getElementById("chatbox");
-                              var systemMessageEl = document.createElement("p");
+                                  function addSystemMessage(content) {
+                                    var chatbox = document.getElementById("chatbox");
+                                    var systemMessageEl = document.createElement("p");
 
-                      systemMessageEl.setAttribute("contenteditable", "true");
-                      systemMessageEl.addEventListener("input", () => {
-                        messages[messages.length - 1].content = systemMessageEl.textContent;
-                      });
+                            systemMessageEl.setAttribute("contenteditable", "true");
+                            systemMessageEl.addEventListener("input", () => {
+                              messages[messages.length - 1].content = systemMessageEl.textContent;
+                            });
 
-                              systemMessageEl.className = "message system-message";
+                                    systemMessageEl.className = "message system-message";
 
-                  systemMessageEl.innerHTML =
-                    "<b>System:</b> " +
-                    converter.makeHtml(
-                      content.replace(
-                        "```html\n" +
-                          document.getElementById("editor").innerText +
-                          "\n```",
-                        "```html\n" +
-                          prettier.format(document.getElementById("editor").innerText, {
-                            parser: "html",
-                            plugins: prettierPlugins,
-                            tabWidth: 2, // Change tab width to 2
-                          }) +
-                          "\n```"
-                      )
-                    );
-                              chatbox.appendChild(systemMessageEl);
-                              messages.push({ role: "system", content: content });
-                            }
-                            window.onload = function () {
-                              var apikey = localStorage.getItem("apikey");
-                              if (apikey) {
-                                document.getElementById("apikey").value = apikey;
-                              }
+                        systemMessageEl.innerHTML =
+                          "<b>System:</b> " +
+                          converter.makeHtml(
+                            content.replace(
+                              "```html\n" +
+                                document.getElementById("editor").innerText +
+                                "\n```",
+                              "```html\n" +
+                                prettier.format(document.getElementById("editor").innerText, {
+                                  parser: "html",
+                                  plugins: prettierPlugins,
+                                  tabWidth: 2, // Change tab width to 2
+                                }) +
+                                "\n```"
+                            )
+                          );
+                                    chatbox.appendChild(systemMessageEl);
+                                    messages.push({ role: "system", content: content });
+                                  }
+                                  window.onload = function () {
+                                    var apikey = localStorage.getItem("apikey");
+                                    if (apikey) {
+                                      document.getElementById("apikey").value = apikey;
+                                    }
 
-                              // Store the initial HTML content before it gets manipulated later
-                              initialHTML = document.documentElement.outerHTML;
+                                    // Store the initial HTML content before it gets manipulated later
+                                    initialHTML = document.documentElement.outerHTML;
 
-                              // Add the system message
-                              let chatbox = document.getElementById("chatbox");
-                              addSystemMessage(
-                                `You are an expert web developer with an IQ of 120.
-                      The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
-                      You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature.
-                      You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.`
-                              );
+                                    // Add the system message
+                                    let chatbox = document.getElementById("chatbox");
+                                    addSystemMessage(
+                                      `You are an expert web developer with an IQ of 120.
+                            The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
+                            You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature.
+                            You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.`
+                                    );
 
-                              // Set the content of the editor
-                              const editor = document.getElementById("editor");
-                              editor.innerText = initialHTML;
+                                    // Set the content of the editor
+                                    const editor = document.getElementById("editor");
+                                    editor.innerText = initialHTML;
 
-                              // Retrieve configuration values from local storage
-                              var modelValue = localStorage.getItem("model");
-                              var maxtokensValue = localStorage.getItem("maxtokens");
-                              var temperatureValue = localStorage.getItem("temperature");
-                              var toppValue = localStorage.getItem("topp");
-                              var presencepenaltyValue = localStorage.getItem("presencepenalty");
-                              var frequencypenaltyValue = localStorage.getItem("frequencypenalty");
+                                    // Retrieve configuration values from local storage
+                                    var modelValue = localStorage.getItem("model");
+                                    var maxtokensValue = localStorage.getItem("maxtokens");
+                                    var temperatureValue = localStorage.getItem("temperature");
+                                    var toppValue = localStorage.getItem("topp");
+                                    var presencepenaltyValue = localStorage.getItem("presencepenalty");
+                                    var frequencypenaltyValue = localStorage.getItem("frequencypenalty");
 
-                              var tokenValue = localStorage.getItem("token");
-                              var repoValue = localStorage.getItem("repo");
+                                    var tokenValue = localStorage.getItem("token");
+                                    var repoValue = localStorage.getItem("repo");
 
-                              if (tokenValue) {
-                                document.getElementById("token").value = tokenValue;
-                              }
-                              if (repoValue) {
-                                document.getElementById("repo").value = repoValue;
-                              }
-                              if (modelValue) {
-                                document.getElementById("model").value = modelValue;
-                              }
-                              if (maxtokensValue) {
-                                document.getElementById("maxtokens").value = maxtokensValue;
-                              }
-                              if (temperatureValue) {
-                                document.getElementById("temperature").value = temperatureValue;
-                              }
-                              if (toppValue) {
-                                document.getElementById("topp").value = toppValue;
-                              }
-                              if (presencepenaltyValue) {
-                                document.getElementById("presencepenalty").value =
-                                  presencepenaltyValue;
-                              }
-                              if (frequencypenaltyValue) {
-                                document.getElementById("frequencypenalty").value =
-                                  frequencypenaltyValue;
-                              }
-                            };
+                                    if (tokenValue) {
+                                      document.getElementById("token").value = tokenValue;
+                                    }
+                                    if (repoValue) {
+                                      document.getElementById("repo").value = repoValue;
+                                    }
+                                    if (modelValue) {
+                                      document.getElementById("model").value = modelValue;
+                                    }
+                                    if (maxtokensValue) {
+                                      document.getElementById("maxtokens").value = maxtokensValue;
+                                    }
+                                    if (temperatureValue) {
+                                      document.getElementById("temperature").value = temperatureValue;
+                                    }
+                                    if (toppValue) {
+                                      document.getElementById("topp").value = toppValue;
+                                    }
+                                    if (presencepenaltyValue) {
+                                      document.getElementById("presencepenalty").value =
+                                        presencepenaltyValue;
+                                    }
+                                    if (frequencypenaltyValue) {
+                                      document.getElementById("frequencypenalty").value =
+                                        frequencypenaltyValue;
+                                    }
+                                  };
 
 
-            async function sendMessage() {
-              var apikey = document.getElementById("apikey").value;
-              var input = document.getElementById("userinput").value;
-              input = input.replace(/^\/source\/$/m, "```html\n" + document.getElementById("editor").innerText + "\n```");
+                  async function sendMessage() {
+                    var apikey = document.getElementById("apikey").value;
+                    var input = document.getElementById("userinput").value;
+      document.getElementById("userinput").value = "";
+      input = input.replace(/^\/source\/$/m, "```html\n" + document.getElementById("editor").innerText + "\n```");
 
-              var chatbox = document.getElementById("chatbox");
-              var model = document.getElementById("model").value;
-              var numresponses = parseInt(document.getElementById("numresponses").value);
+                    var chatbox = document.getElementById("chatbox");
+                    var model = document.getElementById("model").value;
+                    var numresponses = parseInt(document.getElementById("numresponses").value);
 
-              localStorage.setItem("model", model);
-              localStorage.setItem("maxtokens", document.getElementById("maxtokens").value);
-              localStorage.setItem("temperature", document.getElementById("temperature").value);
-              localStorage.setItem("topp", document.getElementById("topp").value);
-              localStorage.setItem("presencepenalty", document.getElementById("presencepenalty").value);
-              localStorage.setItem("frequencypenalty", document.getElementById("frequencypenalty").value);
+                    localStorage.setItem("model", model);
+                    localStorage.setItem("maxtokens", document.getElementById("maxtokens").value);
+                    localStorage.setItem("temperature", document.getElementById("temperature").value);
+                    localStorage.setItem("topp", document.getElementById("topp").value);
+                    localStorage.setItem("presencepenalty", document.getElementById("presencepenalty").value);
+                    localStorage.setItem("frequencypenalty", document.getElementById("frequencypenalty").value);
 
-              messages.push({ role: "user", content: input });
-              var userMessageEl = document.createElement("p");
-              userMessageEl.className = "message user-message";
-              userMessageEl.setAttribute("contenteditable", "true");
-              userMessageEl.addEventListener("input", () => {
-                messages[messages.length - 1].content = userMessageEl.textContent;
-              });
-              userMessageEl.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
-              chatbox.appendChild(userMessageEl);
-
-              var maxtokens = parseInt(document.getElementById("maxtokens").value);
-              var temperature = parseFloat(document.getElementById("temperature").value);
-              var topp = parseFloat(document.getElementById("topp").value);
-              var presencepenalty = parseFloat(document.getElementById("presencepenalty").value);
-              var frequencypenalty = parseFloat(document.getElementById("frequencypenalty").value);
-
-              var response = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                  Authorization: "Bearer " + apikey,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model: model,
-                  messages: getMessagesFromDOM(),
-                  max_tokens: maxtokens,
-                  temperature: temperature,
-                  top_p: topp,
-                  presence_penalty: presencepenalty,
-                  frequency_penalty: frequencypenalty,
-                  n: numresponses,
-                }),
-              });
-
-              var data = await response.json();
-
-              if (data["choices"]) {
-                data["choices"].forEach((choice, index) => {
-                  if (choice["message"]) {
-                    var message = choice["message"]["content"];
-                    messages.push({ role: "assistant", content: message });
-
-                    var gptMessageEl = document.createElement("p");
-                    gptMessageEl.className = "message gpt-message";
-                    gptMessageEl.setAttribute("contenteditable", "true");
-                    gptMessageEl.addEventListener("input", () => {
-                      messages[messages.length - 1].content = gptMessageEl.textContent;
+                    messages.push({ role: "user", content: input });
+                    var userMessageEl = document.createElement("p");
+                    userMessageEl.className = "message user-message";
+                    userMessageEl.setAttribute("contenteditable", "true");
+                    userMessageEl.addEventListener("input", () => {
+                      messages[messages.length - 1].content = userMessageEl.textContent;
                     });
-                    gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
-                    chatbox.appendChild(gptMessageEl);
+                    userMessageEl.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
+                    chatbox.appendChild(userMessageEl);
 
+                    var maxtokens = parseInt(document.getElementById("maxtokens").value);
+                    var temperature = parseFloat(document.getElementById("temperature").value);
+                    var topp = parseFloat(document.getElementById("topp").value);
+                    var presencepenalty = parseFloat(document.getElementById("presencepenalty").value);
+                    var frequencypenalty = parseFloat(document.getElementById("frequencypenalty").value);
 
-      var regenerateButton = document.createElement("button");
-      regenerateButton.innerText = "Regenerate";
-      regenerateButton.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
-      regenerateButton.addEventListener("click", () => {
-        regenerateMessage(messages.length - 1);
-      });
-      gptMessageEl.appendChild(regenerateButton);
-                  }
-                });
-              }
-              document.getElementById("userinput").value = "";
-            }
-                      function getMessagesFromDOM() {
-                        const chatbox = document.getElementById("chatbox");
-                        const messageElements = chatbox.querySelectorAll("p.message");
-                        const messagesFromDOM = [];
+                    var response = await fetch("https://api.openai.com/v1/chat/completions", {
+                      method: "POST",
+                      headers: {
+                        Authorization: "Bearer " + apikey,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        model: model,
+                        messages: getMessagesFromDOM(),
+                        max_tokens: maxtokens,
+                        temperature: temperature,
+                        top_p: topp,
+                        presence_penalty: presencepenalty,
+                        frequency_penalty: frequencypenalty,
+                        n: numresponses,
+                      }),
+                    });
 
-                        messageElements.forEach((messageEl) => {
-                          const role = messageEl.classList.contains("user-message")
-                            ? "user"
-                            : messageEl.classList.contains("gpt-message")
-                            ? "assistant"
-                            : "system";
-                          const content = messageEl.textContent;
-                          messagesFromDOM.push({ role, content });
-                        });
+                    var data = await response.json();
 
-                        return messagesFromDOM;
-                      }
-                            function spawnContent() {
-                              var content = document.getElementById("editor").innerText;
-                              var blob = new Blob([content], { type: "text/html" });
-                              var url = URL.createObjectURL(blob);
-                              window.open(url, "_blank");
-                            }
+                    if (data["choices"]) {
+                      data["choices"].forEach((choice, index) => {
+                        if (choice["message"]) {
+                          var message = choice["message"]["content"];
+                          messages.push({ role: "assistant", content: message });
 
-
-                      async function regenerateMessage(index) {
-                        var apikey = document.getElementById("apikey").value;
-                        var model = document.getElementById("model").value;
-                        var maxtokens = parseInt(document.getElementById("maxtokens").value);
-                        var temperature = parseFloat(document.getElementById("temperature").value);
-                        var topp = parseFloat(document.getElementById("topp").value);
-                        var presencepenalty = parseFloat(document.getElementById("presencepenalty").value);
-                        var frequencypenalty = parseFloat(document.getElementById("frequencypenalty").value);
-
-                        // Get the Generate button and change its properties
-                        var regenerateButton = document.querySelectorAll("button.ml-2")[index - (messages.findIndex(message => message.role === "assistant"))];
-                        regenerateButton.disabled = true;
-                        regenerateButton.innerText = "Regenerating...";
-
-                        var response = await fetch("https://api.openai.com/v1/chat/completions", {
-                          method: "POST",
-                          headers: {
-                            Authorization: "Bearer " + apikey,
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify({
-                            model: model,
-                            messages: getMessagesFromDOM().slice(0, index + 1),
-                            max_tokens: maxtokens,
-                            temperature: temperature,
-                            top_p: topp,
-                            presence_penalty: presencepenalty,
-                            frequency_penalty: frequencypenalty,
-                          }),
-                        });
-
-                        var data = await response.json();
-
-                        if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
-                          var message = data["choices"][0]["message"]["content"];
-                          messages[index].content = message;
-
-                          var gptMessageEl = document.querySelectorAll("p.gpt-message")[index - (messages.findIndex(message => message.role === "assistant"))];
+                          var gptMessageEl = document.createElement("p");
+                          gptMessageEl.className = "message gpt-message";
+                          gptMessageEl.setAttribute("contenteditable", "true");
+                          gptMessageEl.addEventListener("input", () => {
+                            messages[messages.length - 1].content = gptMessageEl.textContent;
+                          });
                           gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
+                          chatbox.appendChild(gptMessageEl);
 
-                          // Restore the Regenerate button properties
-                          regenerateButton.disabled = false;
-                          regenerateButton.innerText = "Regenerate";
-                          gptMessageEl.appendChild(regenerateButton);
-                        } else {
-                          regenerateButton.disabled = false;
-                          regenerateButton.innerText = "Regenerate";
+
+            var regenerateButton = document.createElement("button");
+            regenerateButton.innerText = "Regenerate";
+            regenerateButton.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
+            regenerateButton.addEventListener("click", () => {
+              regenerateMessage(messages.length - 1);
+            });
+            gptMessageEl.appendChild(regenerateButton);
                         }
-                      }
-                            function copyContent() {
-                              var editor = document.getElementById("editor");
-                              var range = document.createRange();
-                              range.selectNodeContents(editor);
-                              window.getSelection().removeAllRanges();
-                              window.getSelection().addRange(range);
-                              document.execCommand("copy");
-                              window.getSelection().removeAllRanges();
-                            }
+                      });
+                    }
 
-                            function toggleConfigPanel() {
-                              var configPanel = document.getElementById("config-panel");
-                              if (configPanel.classList.contains("hidden")) {
-                                configPanel.classList.remove("hidden");
+                  }
+                            function getMessagesFromDOM() {
+                              const chatbox = document.getElementById("chatbox");
+                              const messageElements = chatbox.querySelectorAll("p.message");
+                              const messagesFromDOM = [];
+
+                              messageElements.forEach((messageEl) => {
+                                const role = messageEl.classList.contains("user-message")
+                                  ? "user"
+                                  : messageEl.classList.contains("gpt-message")
+                                  ? "assistant"
+                                  : "system";
+                                const content = messageEl.textContent;
+                                messagesFromDOM.push({ role, content });
+                              });
+
+                              return messagesFromDOM;
+                            }
+                                  function spawnContent() {
+                                    var content = document.getElementById("editor").innerText;
+                                    var blob = new Blob([content], { type: "text/html" });
+                                    var url = URL.createObjectURL(blob);
+                                    window.open(url, "_blank");
+                                  }
+
+
+                            async function regenerateMessage(index) {
+                              var apikey = document.getElementById("apikey").value;
+                              var model = document.getElementById("model").value;
+                              var maxtokens = parseInt(document.getElementById("maxtokens").value);
+                              var temperature = parseFloat(document.getElementById("temperature").value);
+                              var topp = parseFloat(document.getElementById("topp").value);
+                              var presencepenalty = parseFloat(document.getElementById("presencepenalty").value);
+                              var frequencypenalty = parseFloat(document.getElementById("frequencypenalty").value);
+
+                              // Get the Generate button and change its properties
+                              var regenerateButton = document.querySelectorAll("button.ml-2")[index - (messages.findIndex(message => message.role === "assistant"))];
+                              regenerateButton.disabled = true;
+                              regenerateButton.innerText = "Regenerating...";
+
+                              var response = await fetch("https://api.openai.com/v1/chat/completions", {
+                                method: "POST",
+                                headers: {
+                                  Authorization: "Bearer " + apikey,
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                  model: model,
+                                  messages: getMessagesFromDOM().slice(0, index + 1),
+                                  max_tokens: maxtokens,
+                                  temperature: temperature,
+                                  top_p: topp,
+                                  presence_penalty: presencepenalty,
+                                  frequency_penalty: frequencypenalty,
+                                }),
+                              });
+
+                              var data = await response.json();
+
+                              if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
+                                var message = data["choices"][0]["message"]["content"];
+                                messages[index].content = message;
+
+                                var gptMessageEl = document.querySelectorAll("p.gpt-message")[index - (messages.findIndex(message => message.role === "assistant"))];
+                                gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
+
+                                // Restore the Regenerate button properties
+                                regenerateButton.disabled = false;
+                                regenerateButton.innerText = "Regenerate";
+                                gptMessageEl.appendChild(regenerateButton);
                               } else {
-                                configPanel.classList.add("hidden");
+                                regenerateButton.disabled = false;
+                                regenerateButton.innerText = "Regenerate";
                               }
                             }
+                                  function copyContent() {
+                                    var editor = document.getElementById("editor");
+                                    var range = document.createRange();
+                                    range.selectNodeContents(editor);
+                                    window.getSelection().removeAllRanges();
+                                    window.getSelection().addRange(range);
+                                    document.execCommand("copy");
+                                    window.getSelection().removeAllRanges();
+                                  }
 
-                            async function commitContent() {
-                              const token = document.getElementById("token").value;
-                              const repoInfo = document.getElementById("repo").value.split("/");
-                              const content = document.getElementById("editor").innerText;
+                                  function toggleConfigPanel() {
+                                    var configPanel = document.getElementById("config-panel");
+                                    if (configPanel.classList.contains("hidden")) {
+                                      configPanel.classList.remove("hidden");
+                                    } else {
+                                      configPanel.classList.add("hidden");
+                                    }
+                                  }
 
-                              if (repoInfo.length !== 2) {
-                                alert(
-                                  "Invalid organization/repo name format. Please use 'organization/reponame'."
-                                );
-                                return;
-                              }
+                                  async function commitContent() {
+                                    const token = document.getElementById("token").value;
+                                    const repoInfo = document.getElementById("repo").value.split("/");
+                                    const content = document.getElementById("editor").innerText;
 
-                              const octokit = new Octokit({ auth: token });
-                              const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
-                              const myOctokit = new MyOctokit({ auth: token });
+                                    if (repoInfo.length !== 2) {
+                                      alert(
+                                        "Invalid organization/repo name format. Please use 'organization/reponame'."
+                                      );
+                                      return;
+                                    }
 
-                              try {
-                                const { updated, data } = await myOctokit.createOrUpdateTextFile({
-                                  owner: repoInfo[0],
-                                  repo: repoInfo[1],
-                                  path: "index.html",
-                                  content: content,
-                                  message: "Update index.html",
-                                });
+                                    const octokit = new Octokit({ auth: token });
+                                    const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
+                                    const myOctokit = new MyOctokit({ auth: token });
 
-                                if (updated) {
-                                  alert("Successfully committed the content to index.html");
-                                } else {
-                                  alert("Failed to commit the content.");
-                                }
-                              } catch (error) {
-                                console.error(error);
-                                alert(
-                                  "Error committing the content. Please check the console for more details."
-                                );
-                              }
+                                    try {
+                                      const { updated, data } = await myOctokit.createOrUpdateTextFile({
+                                        owner: repoInfo[0],
+                                        repo: repoInfo[1],
+                                        path: "index.html",
+                                        content: content,
+                                        message: "Update index.html",
+                                      });
+
+                                      if (updated) {
+                                        alert("Successfully committed the content to index.html");
+                                      } else {
+                                        alert("Failed to commit the content.");
+                                      }
+                                    } catch (error) {
+                                      console.error(error);
+                                      alert(
+                                        "Error committing the content. Please check the console for more details."
+                                      );
+                                    }
+                                  }
+
+                                  function saveGitHubConfig() {
+                                    localStorage.setItem("token", document.getElementById("token").value);
+                                    localStorage.setItem("repo", document.getElementById("repo").value);
+                                  }
+
+                                  function toggleSourceCodeConfigPanel() {
+                                    var sourceCodeConfigPanel = document.getElementById(
+                                      "source-code-config-panel"
+                                    );
+                                    if (sourceCodeConfigPanel.classList.contains("hidden")) {
+                                      sourceCodeConfigPanel.classList.remove("hidden");
+                                    } else {
+                                      sourceCodeConfigPanel.classList.add("hidden");
+                                    }
+                                  }
+
+
+                            function formatContent() {
+                              const editor = document.getElementById("editor");
+                              const htmlCode = editor.innerText;
+                              const formattedCode = prettier.format(htmlCode, {
+                                parser: "html",
+                                plugins: prettierPlugins,
+                              });
+                              editor.innerText = formattedCode;
                             }
 
-                            function saveGitHubConfig() {
-                              localStorage.setItem("token", document.getElementById("token").value);
-                              localStorage.setItem("repo", document.getElementById("repo").value);
+                            function refreshContent() {
+                              document.getElementById("editor").innerText = initialHTML;
                             }
-
-                            function toggleSourceCodeConfigPanel() {
-                              var sourceCodeConfigPanel = document.getElementById(
-                                "source-code-config-panel"
-                              );
-                              if (sourceCodeConfigPanel.classList.contains("hidden")) {
-                                sourceCodeConfigPanel.classList.remove("hidden");
-                              } else {
-                                sourceCodeConfigPanel.classList.add("hidden");
-                              }
-                            }
-
-
-                      function formatContent() {
-                        const editor = document.getElementById("editor");
-                        const htmlCode = editor.innerText;
-                        const formattedCode = prettier.format(htmlCode, {
-                          parser: "html",
-                          plugins: prettierPlugins,
-                        });
-                        editor.innerText = formattedCode;
-                      }
-
-                      function refreshContent() {
-                        document.getElementById("editor").innerText = initialHTML;
-                      }
     </script>
   
 
