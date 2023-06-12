@@ -177,29 +177,14 @@
                                                 var presencepenaltyValue = localStorage.getItem("presencepenalty");
                                                 var frequencypenaltyValue = localStorage.getItem("frequencypenalty");
 
-                                                if (modelValue) {
-                                                  document.getElementById("model").value = modelValue;
-                                                }
-                                                if (maxtokensValue) {
-                                                  document.getElementById("maxtokens").value = maxtokensValue;
-                                                }
-                                                if (temperatureValue) {
-                                                  document.getElementById("temperature").value = temperatureValue;
-                                                }
-                                                if (toppValue) {
-                                                  document.getElementById("topp").value = toppValue;
-                                                }
-                                                if (presencepenaltyValue) {
-                                                  document.getElementById("presencepenalty").value =
-                                                    presencepenaltyValue;
-                                                }
-                                                if (frequencypenaltyValue) {
-                                                  document.getElementById("frequencypenalty").value =
-                                                    frequencypenaltyValue;
-                                                }
-                                              };
 
-
+document.getElementById("model").value = modelValue || document.getElementById("model").value;
+document.getElementById("maxtokens").value = maxtokensValue || document.getElementById("maxtokens").value;
+document.getElementById("temperature").value = temperatureValue || document.getElementById("temperature").value;
+document.getElementById("topp").value = toppValue || document.getElementById("topp").value;
+document.getElementById("presencepenalty").value = presencepenaltyValue || document.getElementById("presencepenalty").value;
+document.getElementById("frequencypenalty").value = frequencypenaltyValue || document.getElementById("frequencypenalty").value;
+};
                               async function sendMessage() {
                                 var apikey = document.getElementById("apikey").value;
                                 var input = document.getElementById("userinput").value;
