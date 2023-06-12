@@ -43,7 +43,7 @@
           Send Message
         </button>
 
-        <button onclick="toggleConfigPanel();" class="px-4 py-2 border rounded bg-gray-400 text-white">
+        <button onclick="togglePanel('config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white">
           Toggle Configuration Panel
         </button>
       </div>
@@ -100,7 +100,7 @@
           Format
         </button>
       </div>
-      <button onclick="toggleSourceCodeConfigPanel();" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">
+      <button onclick="togglePanel('source-code-config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">
         Toggle Configuration Panel
       </button>
       <div id="source-code-config-panel" class="hidden flex flex-col space-y-4 mb-4">
@@ -377,14 +377,14 @@
                                     window.getSelection().removeAllRanges();
                                   }
 
-                                  function toggleConfigPanel() {
-                                    var configPanel = document.getElementById("config-panel");
-                                    if (configPanel.classList.contains("hidden")) {
-                                      configPanel.classList.remove("hidden");
-                                    } else {
-                                      configPanel.classList.add("hidden");
-                                    }
-                                  }
+                                 function togglePanel(panelId) {
+  var panel = document.getElementById(panelId);
+  if (panel.classList.contains("hidden")) {
+    panel.classList.remove("hidden");
+  } else {
+    panel.classList.add("hidden");
+  }
+}
 
                                   async function commitContent() {
                                     const token = document.getElementById("token").value;
@@ -429,16 +429,14 @@
                                     localStorage.setItem("repo", document.getElementById("repo").value);
                                   }
 
-                                  function toggleSourceCodeConfigPanel() {
-                                    var sourceCodeConfigPanel = document.getElementById(
-                                      "source-code-config-panel"
-                                    );
-                                    if (sourceCodeConfigPanel.classList.contains("hidden")) {
-                                      sourceCodeConfigPanel.classList.remove("hidden");
-                                    } else {
-                                      sourceCodeConfigPanel.classList.add("hidden");
-                                    }
-                                  }
+                                function togglePanel(panelId) {
+  var panel = document.getElementById(panelId);
+  if (panel.classList.contains("hidden")) {
+    panel.classList.remove("hidden");
+  } else {
+    panel.classList.add("hidden");
+  }
+}
 
 
                             function formatContent() {
