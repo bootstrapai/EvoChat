@@ -122,7 +122,7 @@
     add_system_message(
      `You are an expert web developer with an IQ of 120.
    The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
-   You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature, printing entire functions without omissions.
+   You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature.
    You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
    RESPOND WITH MARKDOWN`
     );
@@ -211,7 +211,10 @@ async function send_message() {
   if (data["choices"]) {
     clearInterval(timer_interval);
     // Remove holding message
-    chatbox.removeChild(holding_message);
+    if (holding_message.parentNode) {
+      chatbox.removeChild(holding_message);
+    }
+
     data["choices"].forEach((choice, index) => {
       if (choice["message"]) {
         var message = choice["message"]["content"];
@@ -237,7 +240,8 @@ async function send_message() {
   } else {
     clearInterval(timer_interval);
     $("timer").textContent = "Error";
-  }}
+  }
+}
    function get_messages_from_dom() {
     const chatbox = $("chatbox");
     const message_elements = chatbox.querySelectorAll("p.message");
