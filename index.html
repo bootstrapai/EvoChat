@@ -1,7 +1,6 @@
-<html>
- <head>
+<html><head>
   <title>Chat with GPT</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://unpkg.com/gpt-tokenizer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
   <script src="https://unpkg.com/prettier@latest/standalone.js"></script>
@@ -32,8 +31,6 @@
    window.Octokit = Octokit;
    window.createOrUpdateTextFile = createOrUpdateTextFile;
   </script>
-  <script async="false" type="text/javascript" src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"></script>
-  <script async="false" type="text/javascript" src="chrome-extension://kpgefcfmnafjgpblomihpgmejjdanjjp/nostr-provider.js"></script>
  </head>
  <body class="flex">
   <div class="w-1/2 flex flex-col h-screen box-border p-4">
@@ -41,80 +38,81 @@
     <div contenteditable="true"></div>
    </div>
 
-   <textarea id="userinput" placeholder="Type your message here" class="w-full h-24 p-2 mb-4 border rounded box-border"></textarea>
+   <textarea id="user_input" placeholder="Type your message here" class="w-full h-24 p-2 mb-4 border rounded box-border"></textarea>
    <div class="flex flex-col space-y-4">
-    <button onclick="sendMessage()" class="px-4 py-2 border rounded bg-blue-500 text-white">Send Message</button>
+    <button onclick="send_message()" class="px-4 py-2 border rounded bg-blue-500 text-white">Send Message</button>
 
-    <button onclick="togglePanel('config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white">Toggle Configuration Panel</button>
+    <button onclick="toggle_panel('config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white">Toggle Configuration Panel</button>
    </div>
 
    <div id="config-panel" class="hidden flex flex-col space-y-4 mt-4">
     <label for="apikey">OpenAI API Key:</label>
-    <input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" onchange="saveToLocalStorage('apikey', 'apikey')" class="w-full p-2 border rounded" />
+    <input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" onchange="save_to_local_storage('apikey', 'apikey')" class="w-full p-2 border rounded">
 
-    <label for="numresponses">Number of Responses:</label>
-    <input id="numresponses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded" />
+    <label for="num_responses">Number of Responses:</label>
+    <input id="num_responses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded">
 
     <label for="model">Model:</label>
     <select id="model" class="w-full p-2 border rounded">
      <option value="gpt-4">gpt-4</option>
      <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+     <option value="gpt-3.5-turbo-16k">gpt-3.5-16k</option>
     </select>
 
-    <label for="maxtokens">Max Tokens:</label>
-    <input id="maxtokens" type="number" value="4000" class="w-full p-2 border rounded" />
+    <label for="max_tokens">Max Tokens:</label>
+    <input id="max_tokens" type="number" value="4000" class="w-full p-2 border rounded">
 
     <label for="temperature">Temperature:</label>
-    <input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded" />
+    <input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded">
 
-    <label for="topp">Top-p:</label>
-    <input id="topp" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded" />
+    <label for="top_p">Top-p:</label>
+    <input id="top_p" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded">
 
-    <label for="presencepenalty">Presence Penalty:</label>
-    <input id="presencepenalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded" />
+    <label for="presence_penalty">Presence Penalty:</label>
+    <input id="presence_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
 
-    <label for="frequencypenalty">Frequency Penalty:</label>
-    <input id="frequencypenalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded" />
+    <label for="frequency_penalty">Frequency Penalty:</label>
+    <input id="frequency_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
    </div>
   </div>
 
   <div class="w-1/2 flex flex-col h-screen p-4 box-border">
    <h2 class="text-lg font-bold mb-4">Source Code Editor</h2>
-   <span id="token-count" class="token-count"></span>
+   <span id="token_count" class="token-count"></span>
    <div id="editor" contenteditable="true" class="w-full flex-grow border rounded p-2 whitespace-pre-wrap overflow-auto font-mono mb-4"></div>
 
    <div class="flex space-x-2">
-    <button onclick="handleContent('spawn')" class="px-4 py-2 border rounded mr-2 bg-blue-500 text-white">Spawn</button>
-    <button onclick="handleContent('copy')" class="px-4 py-2 border rounded bg-green-500 text-white">Copy</button>
-    <button onclick="handleContent('commit')" class="px-4 py-2 border rounded bg-yellow-500 text-white">Commit</button>
-    <button onclick="handleContent('refresh')" class="px-4 py-2 border rounded bg-purple-500 text-white">Refresh</button>
+    <button onclick="handle_content('spawn')" class="px-4 py-2 border rounded mr-2 bg-blue-500 text-white">Spawn</button>
+    <button onclick="handle_content('copy')" class="px-4 py-2 border rounded bg-green-500 text-white">Copy</button>
+    <button onclick="handle_content('commit')" class="px-4 py-2 border rounded bg-yellow-500 text-white">Commit</button>
+    <button onclick="handle_content('refresh')" class="px-4 py-2 border rounded bg-purple-500 text-white">Refresh</button>
 
-    <button onclick="formatContent()" class="px-4 py-2 border rounded bg-green-500 text-white ml-2">Format</button>
+    <button onclick="format_content()" class="px-4 py-2 border rounded bg-green-500 text-white ml-2">Format</button>
    </div>
-   <button onclick="togglePanel('source-code-config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">Toggle Configuration Panel</button>
+   <button onclick="toggle_panel('source-code-config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">Toggle Configuration Panel</button>
    <div id="source-code-config-panel" class="hidden flex flex-col space-y-4 mb-4">
     <label for="token">Personal Access Token:</label>
-    <input id="token" type="password" placeholder="Enter your personal access token here" onchange="saveToLocalStorage('token','token')" class="w-full p-2 border rounded mb-2" />
+    <input id="token" type="password" placeholder="Enter your personal access token here" onchange="save_to_local_storage('token','token')" class="w-full p-2 border rounded mb-2">
     <label for="repo">Organization/Repo Name:</label>
-    <input id="repo" type="text" placeholder="Enter organization/repo name here" onchange="saveToLocalStorage('repo','repo')" class="w-full p-2 border rounded mb-4" />
+    <input id="repo" type="text" placeholder="Enter organization/repo name here" onchange="save_to_local_storage('repo','repo')" class="w-full p-2 border rounded mb-4">
    </div>
   </div>
 
   <script>
       var messages = [];
       var converter = new showdown.Converter();
-      function addSystemMessage(content) {
+      function add_system_message(content) {
        var chatbox = document.getElementById("chatbox");
-       var systemMessageEl = document.createElement("p");
+       var system_message_el = document.createElement("p");
 
-       systemMessageEl.setAttribute("contenteditable", "true");
-       systemMessageEl.addEventListener("input", () => {
-        messages[messages.length - 1].content = systemMessageEl.textContent;
+       system_message_el.setAttribute("contenteditable", "true");
+       system_message_el.addEventListener("input", () => {
+        messages[messages.length - 1].content = system_message_el.textContent;
        });
 
-       systemMessageEl.className = "message system-message";
+       system_message_el.className = "message system-message";
 
-       systemMessageEl.innerHTML =
+       system_message_el.innerHTML =
         "<b>System:</b> " +
         converter.makeHtml(
          content.replace(
@@ -130,7 +128,7 @@
            "\n```"
          )
         );
-       chatbox.appendChild(systemMessageEl);
+       chatbox.appendChild(system_message_el);
        messages.push({ role: "system", content: content });
       }
       window.onload = function () {
@@ -145,79 +143,81 @@
        initialHTML = document.documentElement.outerHTML;
 
        // Add the system message
-       let chatbox = document.getElementById("chatbox");chatbox.addEventListener("mouseup", scrollToHighlightedText);
+       let chatbox = document.getElementById("chatbox");chatbox.addEventListener("mouseup", scroll_to_highlighted_text);
 
-       addSystemMessage(
+       add_system_message(
         `You are an expert web developer with an IQ of 120.
                                                           The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
                                                           You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature.
-                                                          You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.`
+                                                          You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
+
+RESPOND WITH MARKDOWN`
        );
 
        const editor = document.getElementById("editor");
        editor.textContent = initialHTML;
-       updateTokenCount();    var modelValue = localStorage.getItem("model");
-       var maxtokensValue = localStorage.getItem("maxtokens");
-       var temperatureValue = localStorage.getItem("temperature");
-       var toppValue = localStorage.getItem("topp");
-       var presencepenaltyValue = localStorage.getItem("presencepenalty");
-       var frequencypenaltyValue = localStorage.getItem("frequencypenalty");
+       update_token_count();    var model_value = localStorage.getItem("model");
+       var max_tokens_value = localStorage.getItem("max_tokens");
+       var temperature_value = localStorage.getItem("temperature");
+       var top_p_value = localStorage.getItem("top_p");
+       var presence_penalty_value = localStorage.getItem("presence_penalty");
+       var frequency_penalty_value = localStorage.getItem("frequency_penalty");
 
-       document.getElementById("model").value = modelValue || document.getElementById("model").value;
-       document.getElementById("maxtokens").value = maxtokensValue || document.getElementById("maxtokens").value;
-       document.getElementById("temperature").value = temperatureValue || document.getElementById("temperature").value;
-       document.getElementById("topp").value = toppValue || document.getElementById("topp").value;
-       document.getElementById("presencepenalty").value = presencepenaltyValue || document.getElementById("presencepenalty").value;
-       document.getElementById("frequencypenalty").value = frequencypenaltyValue || document.getElementById("frequencypenalty").value;
+       document.getElementById("model").value = model_value || document.getElementById("model").value;
+       document.getElementById("max_tokens").value = max_tokens_value || document.getElementById("max_tokens").value;
+       document.getElementById("temperature").value = temperature_value || document.getElementById("temperature").value;
+       document.getElementById("top_p").value = top_p_value || document.getElementById("top_p").value;
+       document.getElementById("presence_penalty").value = presence_penalty_value || document.getElementById("presence_penalty").value;
+       document.getElementById("frequency_penalty").value = frequency_penalty_value || document.getElementById("frequency_penalty").value;
       };
-      async function sendMessage() {
-       var apikey = document.getElementById("apikey").value;
-       var input = document.getElementById("userinput").value;
-       document.getElementById("userinput").value = "";
+      async function send_message() {
+       var api_key = document.getElementById("apikey").value;
+       var input = document.getElementById("user_input").value;
+       document.getElementById("user_input").value = "";
        input = input.replace(/^\/source\/$/m, "```html\n" + document.getElementById("editor").textContent + "\n```");
 
        var chatbox = document.getElementById("chatbox");
        var model = document.getElementById("model").value;
-       var numresponses = parseInt(document.getElementById("numresponses").value);
+       var num_responses = parseInt(document.getElementById("num_responses").value);
 
        localStorage.setItem("model", model);
-       localStorage.setItem("maxtokens", document.getElementById("maxtokens").value);
+       localStorage.setItem("max_tokens", document.getElementById("max_tokens").value);
        localStorage.setItem("temperature", document.getElementById("temperature").value);
-       localStorage.setItem("topp", document.getElementById("topp").value);
-       localStorage.setItem("presencepenalty", document.getElementById("presencepenalty").value);
-       localStorage.setItem("frequencypenalty", document.getElementById("frequencypenalty").value);
+       localStorage.setItem("top_p", document.getElementById("top_p").value);
+       localStorage.setItem("presence_penalty", document.getElementById("presence_penalty").value);
+       localStorage.setItem("frequency_penalty", document.getElementById("frequency_penalty").value);
 
        messages.push({ role: "user", content: input });
-       var userMessageEl = document.createElement("p");
-       userMessageEl.className = "message user-message";
-       userMessageEl.setAttribute("contenteditable", "true");
-       userMessageEl.addEventListener("input", () => {
-        messages[messages.length - 1].content = userMessageEl.textContent;
+       var user_message_el = document.createElement("p");
+       user_message_el.className = "message user-message";
+       user_message_el.setAttribute("contenteditable", "true");
+       user_message_el.addEventListener("input", () => {
+        messages[messages.length - 1].content = user_message_el.textContent;
        });
-       userMessageEl.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
-       chatbox.appendChild(userMessageEl);
+       user_message_el.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
+       chatbox.appendChild(user_message_el);
 
-       var maxtokens = parseInt(document.getElementById("maxtokens").value);
+       var max_tokens = parseInt(document.getElementById("max_tokens").value);
        var temperature = parseFloat(document.getElementById("temperature").value);
-       var topp = parseFloat(document.getElementById("topp").value);
-       var presencepenalty = parseFloat(document.getElementById("presencepenalty").value);
-       var frequencypenalty = parseFloat(document.getElementById("frequencypenalty").value);
+       var top_p = parseFloat(document.getElementById("top_p").value);
+       var presence_penalty = parseFloat(document.getElementById("presence_penalty").value);
+       var frequency_penalty = parseFloat(document.getElementById("frequency_penalty").value);
 
        var response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-         Authorization: "Bearer " + apikey,
+         Authorization: "Bearer " + api_key,
          "Content-Type": "application/json",
         },
         body: JSON.stringify({
          model: model,
-         messages: getMessagesFromDOM(),
-         max_tokens: maxtokens,
+         messages: get_messages_from_dom(),
+         max_tokens: max_tokens,
          temperature: temperature,
-         top_p: topp,
-         presence_penalty: presencepenalty,
-         frequency_penalty: frequencypenalty,
-         n: numresponses,
+         top_p: top_p,
+         presence_penalty: presence_penalty,
+         frequency_penalty: frequency_penalty,
+         n: num_responses,
         }),
        });
 
@@ -229,68 +229,68 @@
           var message = choice["message"]["content"];
           messages.push({ role: "assistant", content: message });
 
-          var gptMessageEl = document.createElement("p");
-          gptMessageEl.className = "message gpt-message";
-          gptMessageEl.setAttribute("contenteditable", "true");
-          gptMessageEl.addEventListener("input", () => {
-           messages[messages.length - 1].content = gptMessageEl.textContent;
+          var gpt_message_el = document.createElement("p");
+          gpt_message_el.className = "message gpt-message";
+          gpt_message_el.setAttribute("contenteditable", "true");
+          gpt_message_el.addEventListener("input", () => {
+           messages[messages.length - 1].content = gpt_message_el.textContent;
           });
-          gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
-          chatbox.appendChild(gptMessageEl);
+          gpt_message_el.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
+          chatbox.appendChild(gpt_message_el);
 
-          var regenerateButton = document.createElement("button");
-          regenerateButton.innerText = "Regenerate";
-          regenerateButton.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
-          regenerateButton.addEventListener("click", () => {
-           regenerateMessage(messages.length - 1);
+          var regenerate_button = document.createElement("button");
+          regenerate_button.innerText = "Regenerate";
+          regenerate_button.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
+          regenerate_button.addEventListener("click", () => {
+           regenerate_message(messages.length - 1);
           });
-          gptMessageEl.appendChild(regenerateButton);
+          gpt_message_el.appendChild(regenerate_button);
          }
         });
        }
       }
-      function getMessagesFromDOM() {
+      function get_messages_from_dom() {
        const chatbox = document.getElementById("chatbox");
-       const messageElements = chatbox.querySelectorAll("p.message");
-       const messagesFromDOM = [];
+       const message_elements = chatbox.querySelectorAll("p.message");
+       const messages_from_dom = [];
 
-       messageElements.forEach((messageEl) => {
-        const role = messageEl.classList.contains("user-message") ? "user" : messageEl.classList.contains("gpt-message") ? "assistant" : "system";
-        const content = messageEl.textContent;
-        messagesFromDOM.push({ role, content });
+       message_elements.forEach((message_el) => {
+        const role = message_el.classList.contains("user-message") ? "user" : message_el.classList.contains("gpt-message") ? "assistant" : "system";
+        const content = message_el.textContent;
+        messages_from_dom.push({ role, content });
        });
 
-       return messagesFromDOM;
+       return messages_from_dom;
       }
 
-      async function regenerateMessage(index) {
-       var apikey = document.getElementById("apikey").value;
+      async function regenerate_message(index) {
+       var api_key = document.getElementById("apikey").value;
        var model = document.getElementById("model").value;
-       var maxtokens = parseInt(document.getElementById("maxtokens").value);
+       var max_tokens = parseInt(document.getElementById("max_tokens").value);
        var temperature = parseFloat(document.getElementById("temperature").value);
-       var topp = parseFloat(document.getElementById("topp").value);
-       var presencepenalty = parseFloat(document.getElementById("presencepenalty").value);
-       var frequencypenalty = parseFloat(document.getElementById("frequencypenalty").value);
+       var top_p = parseFloat(document.getElementById("top_p").value);
+       var presence_penalty = parseFloat(document.getElementById("presence_penalty").value);
+       var frequency_penalty = parseFloat(document.getElementById("frequency_penalty").value);
 
        // Get the Generate button and change its properties
-       var regenerateButton = document.querySelectorAll("button.ml-2")[index - messages.findIndex((message) => message.role === "assistant")];
-       regenerateButton.disabled = true;
-       regenerateButton.innerText = "Regenerating...";
+       var regenerate_button = document.querySelectorAll("button.ml-2")[index - messages.findIndex((message) => message.role === "assistant")];
+       regenerate_button.disabled = true;
+       regenerate_button.innerText = "Regenerating...";
 
        var response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-         Authorization: "Bearer " + apikey,
+         Authorization: "Bearer " + api_key,
          "Content-Type": "application/json",
         },
         body: JSON.stringify({
          model: model,
-         messages: getMessagesFromDOM().slice(0, index + 1),
-         max_tokens: maxtokens,
+         messages: get_messages_from_dom().slice(0, index + 1),
+         max_tokens: max_tokens,
          temperature: temperature,
-         top_p: topp,
-         presence_penalty: presencepenalty,
-         frequency_penalty: frequencypenalty,
+         top_p: top_p,
+         presence_penalty: presence_penalty,
+         frequency_penalty: frequency_penalty,
         }),
        });
 
@@ -300,41 +300,41 @@
         var message = data["choices"][0]["message"]["content"];
         messages[index].content = message;
 
-        var gptMessageEl = document.querySelectorAll("p.gpt-message")[index - messages.findIndex((message) => message.role === "assistant")];
-        gptMessageEl.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
+        var gpt_message_el = document.querySelectorAll("p.gpt-message")[index - messages.findIndex((message) => message.role === "assistant")];
+        gpt_message_el.innerHTML = "<b>GPT:</b> " + converter.makeHtml(message);
 
         // Restore the Regenerate button properties
-        regenerateButton.disabled = false;
-        regenerateButton.innerText = "Regenerate";
-        gptMessageEl.appendChild(regenerateButton);
+        regenerate_button.disabled = false;
+        regenerate_button.innerText = "Regenerate";
+        gpt_message_el.appendChild(regenerate_button);
        } else {
-        regenerateButton.disabled = false;
-        regenerateButton.innerText = "Regenerate";
+        regenerate_button.disabled = false;
+        regenerate_button.innerText = "Regenerate";
        }
       }
-      function togglePanel(panelId) {
-       var panel = document.getElementById(panelId);
+      function toggle_panel(panel_id) {
+       var panel = document.getElementById(panel_id);
        panel.classList.toggle("hidden");
       }
 
-      async function commitContent() {
+      async function commit_content() {
        const token = document.getElementById("token").value;
-       const repoInfo = document.getElementById("repo").value.split("/");
+       const repo_info = document.getElementById("repo").value.split("/");
        const content = document.getElementById("editor").textContent;
 
-       if (repoInfo.length !== 2) {
+       if (repo_info.length !== 2) {
         alert("Invalid organization/repo name format. Please use 'organization/reponame'.");
         return;
        }
 
        const octokit = new Octokit({ auth: token });
        const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
-       const myOctokit = new MyOctokit({ auth: token });
+       const my_octokit = new MyOctokit({ auth: token });
 
        try {
-        const { updated, data } = await myOctokit.createOrUpdateTextFile({
-         owner: repoInfo[0],
-         repo: repoInfo[1],
+        const { updated, data } = await my_octokit.createOrUpdateTextFile({
+         owner: repo_info[0],
+         repo: repo_info[1],
          path: "index.html",
          content: content,
          message: "Update index.html",
@@ -351,29 +351,29 @@
        }
       }
 
-      function formatContent() {
+      function format_content() {
        const editor = document.getElementById("editor");
-       const htmlCode = editor.textContent;
-       const formattedCode = prettier.format(htmlCode, {
+       const html_code = editor.textContent;
+       const formatted_code = prettier.format(html_code, {
         parser: "html",
         plugins: prettierPlugins,
         printWidth: 500,
         tabWidth: 1,
         htmlWhitespaceSensitivity: "ignore",
        });
-       editor.textContent = formattedCode;
+       editor.textContent = formatted_code;
       }
 
-      function refreshContent() {
+      function refresh_content() {
        document.getElementById("editor").textContent = initialHTML;
       }
 
-      function saveToLocalStorage(elementId, storageKey) {
-       const value = document.getElementById(elementId).value;
-       localStorage.setItem(storageKey, value);
+      function save_to_local_storage(element_id, storage_key) {
+       const value = document.getElementById(element_id).value;
+       localStorage.setItem(storage_key, value);
       }
 
-      async function handleContent(action) {
+      async function handle_content(action) {
        const editor = document.getElementById("editor");
        const content = editor.textContent;
 
@@ -392,41 +392,42 @@
          window.getSelection().removeAllRanges();
          break;
         case "commit":
-         commitContent();
+         commit_content();
          break;
         case "refresh":
          editor.textContent = initialHTML;
          break;
        }
       }
-   function scrollToHighlightedText() {
+   function scroll_to_highlighted_text() {
      const chatbox = document.getElementById("chatbox");
      const editor = document.getElementById("editor");
-     const highlightedText = window.getSelection().toString();
+     const highlighted_text = window.getSelection().toString();
 
-     if (highlightedText) {
-       const editorContent = editor.textContent;
-       const index = editorContent.indexOf(highlightedText);
+     if (highlighted_text) {
+       const editor_content = editor.textContent;
+       const index = editor_content.indexOf(highlighted_text);
 
        if (index !== -1) {
          const range = document.createRange();
          range.setStart(editor.firstChild, index);
-         range.setEnd(editor.firstChild, index + highlightedText.length);
+         range.setEnd(editor.firstChild, index + highlighted_text.length);
          const rect = range.getBoundingClientRect();
-         const editorRect = editor.getBoundingClientRect();
-         const scrollTopPos = rect.top - editorRect.top + editor.scrollTop;
+         const editor_rect = editor.getBoundingClientRect();
+         const scrollTopPos = rect.top - editor_rect.top + editor.scrollTop;
          editor.scrollTop = scrollTopPos;
        }
      }
    }
-   editor.addEventListener("input", updateTokenCount);
+   editor.addEventListener("input", update_token_count);
 
-   function updateTokenCount() {
+   function update_token_count() {
      const content = editor.textContent;
      const encoded = GPTTokenizer_cl100k_base.encode(content);
-     const tokenCount = encoded.length;
-     document.getElementById("token-count").textContent = `Tokens: ${tokenCount}`;
+     const token_count = encoded.length;
+     document.getElementById("token_count").textContent = `Tokens: ${token_count}`;
    }
   </script>
- </body>
-</html>
+
+
+</body></html>
