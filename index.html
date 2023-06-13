@@ -97,7 +97,7 @@
    chatbox.appendChild(system_message);
    messages.push({ role: "system", content: content });
    }
-   window.onload = function () {
+   window.onload = async function () {
    const localStorageKeys = ["apikey", "token", "repo"];
    localStorageKeys.forEach((key) => {
    const value = localStorage.getItem(key);
@@ -106,7 +106,16 @@
    }
    });
    // Store the initial HTML content before it gets manipulated later
-   initialHTML = document.documentElement.outerHTML;
+   initialHTML = document.documentElement.outerHTML;  const models = await fetch_models();
+  const modelSelect = $("model");
+  modelSelect.innerHTML = "";
+
+  models.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model.id;
+    option.textContent = model.id;
+    modelSelect.appendChild(option);
+  });
    // Add the system message
    add_system_message(
    `You are an expert web developer with an IQ of 120.
@@ -356,6 +365,18 @@ function update_token_count() {
   const encoded = GPTTokenizer_cl100k_base.encode(content);
   const token_count = encoded.length;
   $('token_count').textContent = `Tokens: ${token_count}`;
+}
+
+async function fetch_models() {
+  const api_key = $("apikey").value;
+  const response = await fetch("https://api.openai.com/v1/models", {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + api_key,
+    },
+  });
+  const data = await response.json();
+  return data.data;
 }
   </script>
  
