@@ -1,434 +1,366 @@
 <html><head>
-  <title>Chat with Assistant</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://unpkg.com/gpt-tokenizer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
-  <script src="https://unpkg.com/prettier@latest/standalone.js"></script>
-  <script src="https://unpkg.com/prettier@latest/parser-html.js"></script>
-  <style>
-    .user-message {
-     background-color: #e0f7fa;
-    }
-    .assistant-message {
-     background-color: #f1f8e9;
-    }
-    .system-message {
-     background-color: #fff3e0;
-    }
-    .token-count {
-     position: absolute;
-     top: 4px;
-     right: 4px;
-     background-color: rgba(0, 0, 0, 0.7);
-     color: white;
-     padding: 2px 4px;
-     border-radius: 4px;
-     font-size: 12px;
-   }
-  </style>
-  <script type="module">
-   import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
-   import { createOrUpdateTextFile } from "https://cdn.skypack.dev/@octokit/plugin-create-or-update-text-file";
-
-   window.Octokit = Octokit;
-   window.createOrUpdateTextFile = createOrUpdateTextFile;
-  </script>
- </head>
- <body class="flex">
-  <div class="w-1/2 flex flex-col h-screen box-border p-4">
-   <div id="chatbox" class="h-[calc(100vh-50vh)] w-full flex-grow border mb-4 rounded p-2 box-border overflow-auto">
-    <div contenteditable="true"></div>
-   </div>
-
-   <textarea id="user_input" placeholder="Type your message here" class="w-full h-24 p-2 mb-4 border rounded box-border"></textarea>
-   <div class="flex flex-col space-y-4">
-    <button onclick="send_message()" class="px-4 py-2 border rounded bg-blue-500 text-white">Send Message</button>
-
-    <button onclick="toggle_panel('config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white">Toggle Configuration Panel</button>
-   </div>
-
-   <div id="config-panel" class="hidden flex flex-col space-y-4 mt-4">
-    <label for="apikey">OpenAI API Key:</label>
-    <input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" onchange="save_to_local_storage('apikey', 'apikey')" class="w-full p-2 border rounded">
-
-    <label for="num_responses">Number of Responses:</label>
-    <input id="num_responses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded">
-
-    <label for="model">Model:</label>
-    <select id="model" class="w-full p-2 border rounded">
-     <option value="gpt-4">assistant-4</option>
-     <option value="gpt-3.5-turbo">assistant-3.5-turbo</option>
-     <option value="gpt-3.5-turbo-16k">assistant-3.5-16k</option>
-    </select>
-
-    <label for="max_tokens">Max Tokens:</label>
-    <input id="max_tokens" type="number" value="4000" class="w-full p-2 border rounded">
-
-    <label for="temperature">Temperature:</label>
-    <input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded">
-
-    <label for="top_p">Top-p:</label>
-    <input id="top_p" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded">
-
-    <label for="presence_penalty">Presence Penalty:</label>
-    <input id="presence_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
-
-    <label for="frequency_penalty">Frequency Penalty:</label>
-    <input id="frequency_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
-   </div>
-  </div>
-
-  <div class="w-1/2 flex flex-col h-screen p-4 box-border">
-   <h2 class="text-lg font-bold mb-4">Source Code Editor</h2>
-   <span id="token_count" class="token-count"></span>
-   <div id="editor" contenteditable="true" class="w-full flex-grow border rounded p-2 whitespace-pre-wrap overflow-auto font-mono mb-4"></div>
-
-   <div class="flex space-x-2">
-    <button onclick="handle_content('spawn')" class="px-4 py-2 border rounded mr-2 bg-blue-500 text-white">Spawn</button>
-    <button onclick="handle_content('copy')" class="px-4 py-2 border rounded bg-green-500 text-white">Copy</button>
-    <button onclick="handle_content('commit')" class="px-4 py-2 border rounded bg-yellow-500 text-white">Commit</button>
-    <button onclick="handle_content('refresh')" class="px-4 py-2 border rounded bg-purple-500 text-white">Refresh</button>
-
-    <button onclick="format_content()" class="px-4 py-2 border rounded bg-green-500 text-white ml-2">Format</button>
-   </div>
-   <button onclick="toggle_panel('source-code-config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">Toggle Configuration Panel</button>
-   <div id="source-code-config-panel" class="hidden flex flex-col space-y-4 mb-4">
-    <label for="token">Personal Access Token:</label>
-    <input id="token" type="password" placeholder="Enter your personal access token here" onchange="save_to_local_storage('token','token')" class="w-full p-2 border rounded mb-2">
-    <label for="repo">Organization/Repo Name:</label>
-    <input id="repo" type="text" placeholder="Enter organization/repo name here" onchange="save_to_local_storage('repo','repo')" class="w-full p-2 border rounded mb-4">
-   </div>
-  </div>
-
-  <script>
-      var messages = [];
-      var converter = new showdown.Converter();
-      var $ = document.getElementById.bind(document);
-      function add_system_message(content) {
-       var chatbox = $("chatbox");
-       var system_message = document.createElement("p");
-
-       system_message.setAttribute("contenteditable", "true");
-       system_message.addEventListener("input", () => {
-        messages[messages.length - 1].content = system_message.textContent;
-       });
-
-       system_message.className = "message system-message";
-
-       system_message.innerHTML =
-        "<b>System:</b> " +
-        converter.makeHtml(
-         content.replace(
-          "```html\n" + $("editor").textContent + "\n```",
-          "```html\n" +
-           prettier.format($("editor").textContent, {
-            parser: "html",
-            embeddedLanguageFormatting: "auto",
-            printWidth: 500,
-            plugins: prettierPlugins,
-            tabWidth: 0, // Change tab width to 2
-           }) +
-           "\n```"
-         )
-        );
-       chatbox.appendChild(system_message);
-       messages.push({ role: "system", content: content });
-      }
-      window.onload = function () {
-       const localStorageKeys = ["apikey", "token", "repo"];
-       localStorageKeys.forEach((key) => {
-        const value = localStorage.getItem(key);
-        if (value) {
-         $(key).value = value;
-        }
-       });
-       // Store the initial HTML content before it gets manipulated later
-       initialHTML = document.documentElement.outerHTML;
-
-       // Add the system message
-       let chatbox = $("chatbox");chatbox.addEventListener("mouseup", scroll_to_highlighted_text);
-
-       add_system_message(
-        `You are an expert web developer with an IQ of 120.
-                                                          The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
-                                                          You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature.
-                                                          You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
-
+<title>Chat with Assistant</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://unpkg.com/gpt-tokenizer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+<script src="https://unpkg.com/prettier@latest/standalone.js"></script>
+<script src="https://unpkg.com/prettier@latest/parser-html.js"></script>
+<style>
+.user-message {
+background-color: #e0f7fa;
+}
+.assistant-message {
+background-color: #f1f8e9;
+}
+.system-message {
+background-color: #fff3e0;
+}
+.token-count {
+position: absolute;
+top: 4px;
+right: 4px;
+background-color: rgba(0, 0, 0, 0.7);
+color: white;
+padding: 2px 4px;
+border-radius: 4px;
+font-size: 12px;
+}
+</style>
+<script type="module">
+import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
+import { createOrUpdateTextFile } from "https://cdn.skypack.dev/@octokit/plugin-create-or-update-text-file";
+window.Octokit = Octokit;
+window.createOrUpdateTextFile = createOrUpdateTextFile;
+</script>
+</head>
+<body class="flex">
+<div class="w-1/2 flex flex-col h-screen box-border p-4">
+<div id="chatbox" class="h-[calc(100vh-50vh)] w-full flex-grow border mb-4 rounded p-2 box-border overflow-auto">
+<div contenteditable="true"></div>
+</div>
+<textarea id="user_input" placeholder="Type your message here" class="w-full h-24 p-2 mb-4 border rounded box-border"></textarea>
+<div class="flex flex-col space-y-4">
+<button onclick="send_message()" class="px-4 py-2 border rounded bg-blue-500 text-white">Send Message</button>
+<button onclick="toggle_panel('config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white">Toggle Configuration Panel</button>
+</div>
+<div id="config-panel" class="hidden flex flex-col space-y-4 mt-4">
+<label for="apikey">OpenAI API Key:</label>
+<input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" onchange="save_to_local_storage('apikey', 'apikey')" class="w-full p-2 border rounded">
+<label for="num_responses">Number of Responses:</label>
+<input id="num_responses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded">
+<label for="model">Model:</label>
+<select id="model" class="w-full p-2 border rounded">
+<option value="gpt-4">assistant-4</option>
+<option value="gpt-3.5-turbo">assistant-3.5-turbo</option>
+<option value="gpt-3.5-turbo-16k">assistant-3.5-16k</option>
+</select>
+<label for="max_tokens">Max Tokens:</label>
+<input id="max_tokens" type="number" value="4000" class="w-full p-2 border rounded">
+<label for="temperature">Temperature:</label>
+<input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded">
+<label for="top_p">Top-p:</label>
+<input id="top_p" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded">
+<label for="presence_penalty">Presence Penalty:</label>
+<input id="presence_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
+<label for="frequency_penalty">Frequency Penalty:</label>
+<input id="frequency_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
+</div>
+</div>
+<div class="w-1/2 flex flex-col h-screen p-4 box-border">
+<h2 class="text-lg font-bold mb-4">Source Code Editor</h2>
+<span id="token_count" class="token-count"></span>
+<div id="editor" contenteditable="true" class="w-full flex-grow border rounded p-2 whitespace-pre-wrap overflow-auto font-mono mb-4"></div>
+<div class="flex space-x-2">
+<button onclick="handle_content('spawn')" class="px-4 py-2 border rounded mr-2 bg-blue-500 text-white">Spawn</button>
+<button onclick="handle_content('copy')" class="px-4 py-2 border rounded bg-green-500 text-white">Copy</button>
+<button onclick="handle_content('commit')" class="px-4 py-2 border rounded bg-yellow-500 text-white">Commit</button>
+<button onclick="handle_content('refresh')" class="px-4 py-2 border rounded bg-purple-500 text-white">Refresh</button>
+<button onclick="format_content()" class="px-4 py-2 border rounded bg-green-500 text-white ml-2">Format</button>
+</div>
+<button onclick="toggle_panel('source-code-config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white mb-4">Toggle Configuration Panel</button>
+<div id="source-code-config-panel" class="hidden flex flex-col space-y-4 mb-4">
+<label for="token">Personal Access Token:</label>
+<input id="token" type="password" placeholder="Enter your personal access token here" onchange="save_to_local_storage('token','token')" class="w-full p-2 border rounded mb-2">
+<label for="repo">Organization/Repo Name:</label>
+<input id="repo" type="text" placeholder="Enter organization/repo name here" onchange="save_to_local_storage('repo','repo')" class="w-full p-2 border rounded mb-4">
+</div>
+</div>
+<script>
+var messages = [];
+var converter = new showdown.Converter();
+var $ = document.getElementById.bind(document);
+function add_system_message(content) {
+var chatbox = $("chatbox");
+var system_message = document.createElement("p");
+system_message.setAttribute("contenteditable", "true");
+system_message.addEventListener("input", () => {
+messages[messages.length - 1].content = system_message.textContent;
+});
+system_message.className = "message system-message";
+system_message.innerHTML = "<b>System:</b> " + converter.makeHtml(content);
+chatbox.appendChild(system_message);
+messages.push({ role: "system", content: content });
+}
+window.onload = function () {
+const localStorageKeys = ["apikey", "token", "repo"];
+localStorageKeys.forEach((key) => {
+const value = localStorage.getItem(key);
+if (value) {
+$(key).value = value;
+}
+});
+// Store the initial HTML content before it gets manipulated later
+initialHTML = document.documentElement.outerHTML;
+// Add the system message
+add_system_message(
+`You are an expert web developer with an IQ of 120.
+The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
+You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature.
+You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
 RESPOND WITH MARKDOWN`
-       );
+);
+const editor = $("editor");
+editor.textContent = initialHTML;
+update_token_count();
+var model_value = localStorage.getItem("model");
+var max_tokens_value = localStorage.getItem("max_tokens");
+var temperature_value = localStorage.getItem("temperature");
+var top_p_value = localStorage.getItem("top_p");
+var presence_penalty_value = localStorage.getItem("presence_penalty");
+var frequency_penalty_value = localStorage.getItem("frequency_penalty");
+$("model").value = model_value || $("model").value;
+$("max_tokens").value = max_tokens_value || $("max_tokens").value;
+$("temperature").value = temperature_value || $("temperature").value;
+$("top_p").value = top_p_value || $("top_p").value;
+$("presence_penalty").value = presence_penalty_value || $("presence_penalty").value;
+$("frequency_penalty").value = frequency_penalty_value || $("frequency_penalty").value;
+};
+async function send_message() {
+var api_key = $("apikey").value;
+var input = $("user_input").value;
+$("user_input").value = "";
+input = input.replace(/^\/source\/$/gm, "```html\n" + $("editor").textContent.replace(/^\s+/gm, "") + "\n```");
+var chatbox = $("chatbox");
+var model = $("model").value;
+var num_responses = parseInt($("num_responses").value);
+localStorage.setItem("model", model);
+localStorage.setItem("max_tokens", $("max_tokens").value);
+localStorage.setItem("temperature", $("temperature").value);
+localStorage.setItem("top_p", $("top_p").value);
+localStorage.setItem("presence_penalty", $("presence_penalty").value);
+localStorage.setItem("frequency_penalty", $("frequency_penalty").value);
+messages.push({ role: "user", content: input });
+var user_message = document.createElement("p");
+user_message.className = "message user-message";
+user_message.setAttribute("contenteditable", "true");
+user_message.addEventListener("input", () => {
+messages[messages.length - 1].content = user_message.textContent;
+});
+user_message.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
+chatbox.appendChild(user_message);
+var max_tokens = parseInt($("max_tokens").value);
+var temperature = parseFloat($("temperature").value);
+var top_p = parseFloat($("top_p").value);
+var presence_penalty = parseFloat($("presence_penalty").value);
+var frequency_penalty = parseFloat($("frequency_penalty").value);
+var response = await fetch("https://api.openai.com/v1/chat/completions", {
+method: "POST",
+headers: {
+Authorization: "Bearer " + api_key,
+"Content-Type": "application/json",
+},
+body: JSON.stringify({
+model: model,
+messages: get_messages_from_dom(),
+max_tokens: max_tokens,
+temperature: temperature,
+top_p: top_p,
+presence_penalty: presence_penalty,
+frequency_penalty: frequency_penalty,
+n: num_responses,
+}),
+});
+var data = await response.json();
+if (data["choices"]) {
+data["choices"].forEach((choice, index) => {
+if (choice["message"]) {
+var message = choice["message"]["content"];
+messages.push({ role: "assistant", content: message });
+var assistant_message = document.createElement("p");
+assistant_message.className = "message assistant-message";
+assistant_message.setAttribute("contenteditable", "true");
+assistant_message.addEventListener("input", () => {
+messages[messages.length - 1].content = assistant_message.textContent;
+});
+assistant_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
+chatbox.appendChild(assistant_message);
+var regenerate_button = document.createElement("button");
+regenerate_button.innerText = "Regenerate";
+regenerate_button.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
+regenerate_button.addEventListener("click", () => {
+regenerate_message(messages.length - 1);
+});
+assistant_message.appendChild(regenerate_button);
+}
+});
+}
+}
+function get_messages_from_dom() {
+const chatbox = $("chatbox");
+const message_elements = chatbox.querySelectorAll("p.message");
+const messages_from_dom = [];
+message_elements.forEach((message) => {
+const role = message.classList.contains("user-message") ? "user" : message.classList.contains("assistant-message") ? "assistant" : "system";
+const content = message.textContent;
+messages_from_dom.push({ role, content });
+});
+return messages_from_dom;
+}
+async function regenerate_message(index) {
+var api_key = $("apikey").value;
+var model = $("model").value;
+var max_tokens = parseInt($("max_tokens").value);
+var temperature = parseFloat($("temperature").value);
+var top_p = parseFloat($("top_p").value);
+var presence_penalty = parseFloat($("presence_penalty").value);
+var frequency_penalty = parseFloat($("frequency_penalty").value);
+// Get the Generate button and change its properties
+var regenerate_button = document.querySelectorAll("button.ml-2")[index - messages.findIndex((message) => message.role === "assistant")];
+regenerate_button.disabled = true;
+regenerate_button.innerText = "Regenerating...";
+var response = await fetch("https://api.openai.com/v1/chat/completions", {
+method: "POST",
+headers: {
+Authorization: "Bearer " + api_key,
+"Content-Type": "application/json",
+},
+body: JSON.stringify({
+model: model,
+messages: get_messages_from_dom().slice(0, index + 1),
+max_tokens: max_tokens,
+temperature: temperature,
+top_p: top_p,
+presence_penalty: presence_penalty,
+frequency_penalty: frequency_penalty,
+}),
+});
+var data = await response.json();
+if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
+var message = data["choices"][0]["message"]["content"];
+messages[index].content = message;
+var assistant_message = document.querySelectorAll("p.assistant-message")[index - messages.findIndex((message) => message.role === "assistant")];
+assistant_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
+// Restore the Regenerate button properties
+regenerate_button.disabled = false;
+regenerate_button.innerText = "Regenerate";
+assistant_message.appendChild(regenerate_button);
+} else {
+regenerate_button.disabled = false;
+regenerate_button.innerText = "Regenerate";
+}
+}
+function toggle_panel(panel_id) {
+var panel = $(panel_id);
+panel.classList.toggle("hidden");
+}
+async function commit_content() {
+const token = $("token").value;
+const repo_info = $("repo").value.split("/");
+const content = $("editor").textContent;
+if (repo_info.length !== 2) {
+alert("Invalid organization/repo name format. Please use 'organization/reponame'.");
+return;
+}
+const octokit = new Octokit({ auth: token });
+const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
+const my_octokit = new MyOctokit({ auth: token });
+try {
+const { updated, data } = await my_octokit.createOrUpdateTextFile({
+owner: repo_info[0],
+repo: repo_info[1],
+path: "index.html",
+content: content,
+message: "Update index.html",
+});
+if (updated) {
+alert("Successfully committed the content to index.html");
+} else {
+alert("Failed to commit the content.");
+}
+} catch (error) {
+console.error(error);
+alert("Error committing the content. Please check the console for more details.");
+}
+}
+function format_content() {
+const editor = $("editor");
+const html_code = editor.textContent;
+const formatted_code = prettier.format(html_code, {
+parser: "html",
+plugins: prettierPlugins,
+printWidth: 500,
+tabWidth: 1,
+htmlWhitespaceSensitivity: "ignore",
+});
+editor.textContent = formatted_code;
+}
+function refresh_content() {
+$("editor").textContent = initialHTML;
+}
+function save_to_local_storage(element_id, storage_key) {
+const value = $(element_id).value;
+localStorage.setItem(storage_key, value);
+}
+async function handle_content(action) {
+const editor = $("editor");
+const content = editor.textContent;
+switch (action) {
+case "spawn":
+const blob = new Blob([content], { type: "text/html" });
+const url = URL.createObjectURL(blob);
+window.open(url, "_blank");
+break;
+case "copy":
+const range = document.createRange();
+range.selectNodeContents(editor);
+window.getSelection().removeAllRanges();
+window.getSelection().addRange(range);
+document.execCommand("copy");
+window.getSelection().removeAllRanges();
+break;
+case "commit":
+commit_content();
+break;
+case "refresh":
+editor.textContent = initialHTML;
+break;
+}
+}
+function scroll_to_highlighted_text() {
+const chatbox = $("chatbox");
+const editor = $("editor");
+const highlighted_text = window.getSelection().toString();
+if (highlighted_text) {
+const editor_content = editor.textContent;
+const index = editor_content.indexOf(highlighted_text);
+if (index !== -1) {
+const range = document.createRange();
+range.setStart(editor.firstChild, index);
+range.setEnd(editor.firstChild, index + highlighted_text.length);
+const rect = range.getBoundingClientRect();
+const editor_rect = editor.getBoundingClientRect();
+const scrollTopPos = rect.top - editor_rect.top + editor.scrollTop;
+editor.scrollTop = scrollTopPos;
+}
+}
+}
+editor.addEventListener("input", update_token_count);
+function update_token_count() {
+const content = editor.textContent.trimStart();
+const encoded = GPTTokenizer_cl100k_base.encode(content);
+const token_count = encoded.length;
+$("token_count").textContent = `Tokens: ${token_count}`;
+}
+</script>
 
-       const editor = $("editor");
-       editor.textContent = initialHTML;
-       update_token_count();    var model_value = localStorage.getItem("model");
-       var max_tokens_value = localStorage.getItem("max_tokens");
-       var temperature_value = localStorage.getItem("temperature");
-       var top_p_value = localStorage.getItem("top_p");
-       var presence_penalty_value = localStorage.getItem("presence_penalty");
-       var frequency_penalty_value = localStorage.getItem("frequency_penalty");
-
-       $("model").value = model_value || $("model").value;
-       $("max_tokens").value = max_tokens_value || $("max_tokens").value;
-       $("temperature").value = temperature_value || $("temperature").value;
-       $("top_p").value = top_p_value || $("top_p").value;
-       $("presence_penalty").value = presence_penalty_value || $("presence_penalty").value;
-       $("frequency_penalty").value = frequency_penalty_value || $("frequency_penalty").value;
-      };
-      async function send_message() {
-       var api_key = $("apikey").value;
-       var input = $("user_input").value;
-       $("user_input").value = "";
-       input = input.replace(/^\/source\/$/m, "```html\n" + $("editor").textContent + "\n```");
-
-       var chatbox = $("chatbox");
-       var model = $("model").value;
-       var num_responses = parseInt($("num_responses").value);
-
-       localStorage.setItem("model", model);
-       localStorage.setItem("max_tokens", $("max_tokens").value);
-       localStorage.setItem("temperature", $("temperature").value);
-       localStorage.setItem("top_p", $("top_p").value);
-       localStorage.setItem("presence_penalty", $("presence_penalty").value);
-       localStorage.setItem("frequency_penalty", $("frequency_penalty").value);
-
-       messages.push({ role: "user", content: input });
-       var user_message = document.createElement("p");
-       user_message.className = "message user-message";
-       user_message.setAttribute("contenteditable", "true");
-       user_message.addEventListener("input", () => {
-        messages[messages.length - 1].content = user_message.textContent;
-       });
-       user_message.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
-       chatbox.appendChild(user_message);
-
-       var max_tokens = parseInt($("max_tokens").value);
-       var temperature = parseFloat($("temperature").value);
-       var top_p = parseFloat($("top_p").value);
-       var presence_penalty = parseFloat($("presence_penalty").value);
-       var frequency_penalty = parseFloat($("frequency_penalty").value);
-
-       var response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-         Authorization: "Bearer " + api_key,
-         "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-         model: model,
-         messages: get_messages_from_dom(),
-         max_tokens: max_tokens,
-         temperature: temperature,
-         top_p: top_p,
-         presence_penalty: presence_penalty,
-         frequency_penalty: frequency_penalty,
-         n: num_responses,
-        }),
-       });
-
-       var data = await response.json();
-
-       if (data["choices"]) {
-        data["choices"].forEach((choice, index) => {
-         if (choice["message"]) {
-          var message = choice["message"]["content"];
-          messages.push({ role: "assistant", content: message });
-
-          var assistant_message = document.createElement("p");
-          assistant_message.className = "message assistant-message";
-          assistant_message.setAttribute("contenteditable", "true");
-          assistant_message.addEventListener("input", () => {
-           messages[messages.length - 1].content = assistant_message.textContent;
-          });
-          assistant_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
-          chatbox.appendChild(assistant_message);
-
-          var regenerate_button = document.createElement("button");
-          regenerate_button.innerText = "Regenerate";
-          regenerate_button.className = "ml-2 py-1 px-2 bg-red-500 text-white rounded";
-          regenerate_button.addEventListener("click", () => {
-           regenerate_message(messages.length - 1);
-          });
-          assistant_message.appendChild(regenerate_button);
-         }
-        });
-       }
-      }
-      function get_messages_from_dom() {
-       const chatbox = $("chatbox");
-       const message_elements = chatbox.querySelectorAll("p.message");
-       const messages_from_dom = [];
-
-       message_elements.forEach((message) => {
-        const role = message.classList.contains("user-message") ? "user" : message.classList.contains("assistant-message") ? "assistant" : "system";
-        const content = message.textContent;
-        messages_from_dom.push({ role, content });
-       });
-
-       return messages_from_dom;
-      }
-
-      async function regenerate_message(index) {
-       var api_key = $("apikey").value;
-       var model = $("model").value;
-       var max_tokens = parseInt($("max_tokens").value);
-       var temperature = parseFloat($("temperature").value);
-       var top_p = parseFloat($("top_p").value);
-       var presence_penalty = parseFloat($("presence_penalty").value);
-       var frequency_penalty = parseFloat($("frequency_penalty").value);
-
-       // Get the Generate button and change its properties
-       var regenerate_button = document.querySelectorAll("button.ml-2")[index - messages.findIndex((message) => message.role === "assistant")];
-       regenerate_button.disabled = true;
-       regenerate_button.innerText = "Regenerating...";
-
-       var response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-         Authorization: "Bearer " + api_key,
-         "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-         model: model,
-         messages: get_messages_from_dom().slice(0, index + 1),
-         max_tokens: max_tokens,
-         temperature: temperature,
-         top_p: top_p,
-         presence_penalty: presence_penalty,
-         frequency_penalty: frequency_penalty,
-        }),
-       });
-
-       var data = await response.json();
-
-       if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
-        var message = data["choices"][0]["message"]["content"];
-        messages[index].content = message;
-
-        var assistant_message = document.querySelectorAll("p.assistant-message")[index - messages.findIndex((message) => message.role === "assistant")];
-        assistant_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
-
-        // Restore the Regenerate button properties
-        regenerate_button.disabled = false;
-        regenerate_button.innerText = "Regenerate";
-        assistant_message.appendChild(regenerate_button);
-       } else {
-        regenerate_button.disabled = false;
-        regenerate_button.innerText = "Regenerate";
-       }
-      }
-      function toggle_panel(panel_id) {
-       var panel = $(panel_id);
-       panel.classList.toggle("hidden");
-      }
-
-      async function commit_content() {
-       const token = $("token").value;
-       const repo_info = $("repo").value.split("/");
-       const content = $("editor").textContent;
-
-       if (repo_info.length !== 2) {
-        alert("Invalid organization/repo name format. Please use 'organization/reponame'.");
-        return;
-       }
-
-       const octokit = new Octokit({ auth: token });
-       const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
-       const my_octokit = new MyOctokit({ auth: token });
-
-       try {
-        const { updated, data } = await my_octokit.createOrUpdateTextFile({
-         owner: repo_info[0],
-         repo: repo_info[1],
-         path: "index.html",
-         content: content,
-         message: "Update index.html",
-        });
-
-        if (updated) {
-         alert("Successfully committed the content to index.html");
-        } else {
-         alert("Failed to commit the content.");
-        }
-       } catch (error) {
-        console.error(error);
-        alert("Error committing the content. Please check the console for more details.");
-       }
-      }
-
-      function format_content() {
-       const editor = $("editor");
-       const html_code = editor.textContent;
-       const formatted_code = prettier.format(html_code, {
-        parser: "html",
-        plugins: prettierPlugins,
-        printWidth: 500,
-        tabWidth: 1,
-        htmlWhitespaceSensitivity: "ignore",
-       });
-       editor.textContent = formatted_code;
-      }
-
-      function refresh_content() {
-       $("editor").textContent = initialHTML;
-      }
-
-      function save_to_local_storage(element_id, storage_key) {
-       const value = $(element_id).value;
-       localStorage.setItem(storage_key, value);
-      }
-
-      async function handle_content(action) {
-       const editor = $("editor");
-       const content = editor.textContent;
-
-       switch (action) {
-        case "spawn":
-         const blob = new Blob([content], { type: "text/html" });
-         const url = URL.createObjectURL(blob);
-         window.open(url, "_blank");
-         break;
-        case "copy":
-         const range = document.createRange();
-         range.selectNodeContents(editor);
-         window.getSelection().removeAllRanges();
-         window.getSelection().addRange(range);
-         document.execCommand("copy");
-         window.getSelection().removeAllRanges();
-         break;
-        case "commit":
-         commit_content();
-         break;
-        case "refresh":
-         editor.textContent = initialHTML;
-         break;
-       }
-      }
-   function scroll_to_highlighted_text() {
-     const chatbox = $("chatbox");
-     const editor = $("editor");
-     const highlighted_text = window.getSelection().toString();
-
-     if (highlighted_text) {
-       const editor_content = editor.textContent;
-       const index = editor_content.indexOf(highlighted_text);
-
-       if (index !== -1) {
-         const range = document.createRange();
-         range.setStart(editor.firstChild, index);
-         range.setEnd(editor.firstChild, index + highlighted_text.length);
-         const rect = range.getBoundingClientRect();
-         const editor_rect = editor.getBoundingClientRect();
-         const scrollTopPos = rect.top - editor_rect.top + editor.scrollTop;
-         editor.scrollTop = scrollTopPos;
-       }
-     }
-   }
-   editor.addEventListener("input", update_token_count);
-
-   function update_token_count() {
-     const content = editor.textContent;
-     const encoded = GPTTokenizer_cl100k_base.encode(content);
-     const token_count = encoded.length;
-     $("token_count").textContent = `Tokens: ${token_count}`;
-   }
-  </script>
 </body></html>
