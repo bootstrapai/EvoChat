@@ -157,10 +157,11 @@ async function send_message() {
   });
   user_message.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
   $("chatbox").appendChild(user_message);
-
   messageQueue.push(input);
   if (messageQueue.length === 1) {
     process_message_queue();
+  } else {
+    add_holding_message();
   }
 }
 
