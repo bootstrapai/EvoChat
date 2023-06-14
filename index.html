@@ -50,9 +50,6 @@
     <input id="num_responses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded">
     <label for="model">Model:</label>
     <select id="model" class="w-full p-2 border rounded">
-     <option value="gpt-4">assistant-4</option>
-     <option value="gpt-3.5-turbo">assistant-3.5-turbo</option>
-     <option value="gpt-3.5-turbo-16k">assistant-3.5-16k</option>
     </select>
     <label for="max_tokens">Max Tokens:</label>
     <input id="max_tokens" type="number" value="4000" class="w-full p-2 border rounded">
@@ -105,7 +102,6 @@
       $(key).value = value;
      }
     });
-    // Store the initial HTML content before it gets manipulated later
     initialHTML = document.documentElement.outerHTML;
     const models = await fetch_models();
     const modelSelect = $("model");
@@ -117,7 +113,6 @@
      option.textContent = model.id;
      modelSelect.appendChild(option);
     });
-    // Add the system message
     add_system_message(
      `You are an expert web developer with an IQ of 120.
    The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
@@ -256,7 +251,6 @@ function remove_holding_message(holding_message_data, new_message) {
     var top_p = parseFloat($("top_p").value);
     var presence_penalty = parseFloat($("presence_penalty").value);
     var frequency_penalty = parseFloat($("frequency_penalty").value);
-    // Get the Generate button and change its properties
     var regenerate_button = document.querySelectorAll("button.ml-2")[index - messages.findIndex((message) => message.role === "assistant")];
     regenerate_button.disabled = true;
     regenerate_button.innerText = "Regenerating...";
@@ -282,7 +276,6 @@ function remove_holding_message(holding_message_data, new_message) {
      messages[index].content = message;
      var assistant_message = document.querySelectorAll("p.assistant-message")[index - messages.findIndex((message) => message.role === "assistant")];
      assistant_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
-     // Restore the Regenerate button properties
      regenerate_button.disabled = false;
      regenerate_button.innerText = "Regenerate";
      assistant_message.appendChild(regenerate_button);
@@ -406,6 +399,4 @@ function remove_holding_message(holding_message_data, new_message) {
     return data.data;
    }
   </script>
- 
-
 </body></html>
