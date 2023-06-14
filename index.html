@@ -79,21 +79,23 @@
     <button onclick="format_content()" class="px-4 py-2 border rounded bg-green-500 text-white ml-2">Format</button>
    </div>
   </div>
-  <script>
+  <script>var messageId = 0;
    var messages = [];   var messageQueue = [];   var converter = new showdown.Converter();var holdingMessages = [];
    var $ = document.getElementById.bind(document);
-   function add_system_message(content) {
+function add_system_message(content) {
     var chatbox = $("chatbox");
     var system_message = document.createElement("p");
     system_message.setAttribute("contenteditable", "true");
+    system_message.setAttribute("data-id", messageId);
     system_message.addEventListener("input", () => {
-     messages[messages.length - 1].content = system_message.textContent;
+        messages.find(m => m.id === messageId).content = system_message.textContent;
     });
     system_message.className = "message system-message";
     system_message.innerHTML = "<b>System:</b> " + converter.makeHtml(content);
     chatbox.appendChild(system_message);
-    messages.push({ role: "system", content: content });
-   }
+    messages.push({ id: messageId, role: "system", content: content });
+    messageId++;
+}
    window.onload = async function () {
     load();
     initialHTML = document.documentElement.outerHTML;
@@ -137,9 +139,9 @@ async function send_message() {
     /^\/source\/$/gm,
     "```html\n" + $("editor").textContent.replace(/^\s+/gm, "") + "\n```"
   );
-  messages.push({ role: "user", content: input });
+     messages.push({ id: messageId, role: "user", content: input });    
   var user_message = document.createElement("p");
-  user_message.className = "message user-message";
+  user_message.className = "message user-message";user_message.setAttribute("data-id", messageId);
   user_message.setAttribute("contenteditable", "true");
   user_message.addEventListener("input", () => {
     messages[messages.length - 1].content = user_message.textContent;
@@ -152,7 +154,8 @@ async function send_message() {
   holdingMessages.push(holding_message);
   if (messageQueue.length === 1) {
     process_message_queue();
-  }  chatbox.scrollTop = chatbox.scrollHeight;}
+  }  chatbox.scrollTop = chatbox.scrollHeight;
+    messageId++;}
 
 async function process_message_queue() {
       if (messageQueue.length === 0) return;
@@ -192,6 +195,8 @@ function add_holding_message() {
     timer += 1;
     holding_message.querySelector(".timer").textContent = timer;
   }, 1000);
+    holding_message.setAttribute("data-id", messageId);messages.push({ id: messageId, role: "assistant", content: "" });
+    messageId++;
   return { holding_message, timerInterval };
 }
 
@@ -199,13 +204,6 @@ function remove_holding_message(holding_message_data, new_message) {
     var chatbox = $("chatbox");
     holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message);
     clearInterval(holding_message_data.timerInterval);
-    var regenerate_button = document.createElement("button");
-    regenerate_button.innerText = "Regenerate";
-    regenerate_button.className = "ml-2 bg-red-500 text-white";
-    var assistant_messages = Array.from(document.querySelectorAll("p.assistant-message"));
-    const i = assistant_messages.indexOf(holding_message_data.holding_message);
-    regenerate_button.addEventListener("click", () => regenerate_message(i));
-    holding_message_data.holding_message.appendChild(regenerate_button);
 }function get_messages_from_dom() {
     const chatbox = $("chatbox");
     const message_elements = chatbox.querySelectorAll("p.message");
@@ -217,24 +215,7 @@ function remove_holding_message(holding_message_data, new_message) {
     });
     return messages_from_dom;
    }
-async function regenerate_message(index) {
-    var assistant_messages = Array.from(document.querySelectorAll("p.assistant-message"));
-    var regenerate_button = assistant_messages[index].querySelector("button");
-    regenerate_button.disabled = true;
-    regenerate_button.innerText = "Regenerating...";
-    var data = await callOpenAI(get_messages_from_dom().slice(0, index + 1));
-    if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
-        var message = data["choices"][0]["message"]["content"];
-        messages[index].content = message;
-        assistant_messages[index].innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
-        regenerate_button.disabled = false;
-        regenerate_button.innerText = "Regenerate";
-        assistant_messages[index].appendChild(regenerate_button);
-    } else {
-        regenerate_button.disabled = false;
-        regenerate_button.innerText = "Regenerate";
-    }
-}
+
    function toggle_panel(panel_id) {
     var panel = $(panel_id);
     panel.classList.toggle("hidden");
@@ -375,6 +356,8 @@ function load(){
     return localStorageKeys.reduce((o,k) => ({...o, [k]: get(k)}),{});}
 function set(id){
         localStorage.setItem(id, $(id).value);
+}function find_message_node(id) {
+    return document.querySelector(`[data-id='${id}']`);
 }
   </script>
 </body></html>
