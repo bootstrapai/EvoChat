@@ -158,8 +158,7 @@ async function send_message() {
   holdingMessages.push(holding_message);
   if (messageQueue.length === 1) {
     process_message_queue();
-  } 
-}
+  }  chatbox.scrollTop = chatbox.scrollHeight;}
 
 async function process_message_queue() {
   if (messageQueue.length === 0) return;
@@ -179,6 +178,7 @@ async function process_message_queue() {
   var top_p = parseFloat($("top_p").value);
   var presence_penalty = parseFloat($("presence_penalty").value);
   var frequency_penalty = parseFloat($("frequency_penalty").value);
+  document.querySelectorAll("button.ml-2").forEach(button => button.disabled = true);
 
   var response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -208,9 +208,10 @@ async function process_message_queue() {
 
         // Remove the corresponding holding message
         var holding_message = holdingMessages.shift();
-        remove_holding_message(holding_message, message);
+        remove_holding_message(holding_message, message);chatbox.scrollTop = chatbox.scrollHeight;
       }
-    });
+    });    document.querySelectorAll("button.ml-2").forEach(button => button.disabled = false);
+
     messageQueue.shift();
     process_message_queue();
   }
@@ -234,6 +235,12 @@ function remove_holding_message(holding_message_data, new_message) {
   var chatbox = $("chatbox");
   holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message);
   clearInterval(holding_message_data.timerInterval);
+var regenerate_button = document.createElement("button");
+regenerate_button.innerText = "Regenerate";
+regenerate_button.className = "ml-2 bg-red-500 text-white";
+const i = messages.length - 1
+regenerate_button.addEventListener("click", () => regenerate_message(i));
+holding_message_data.holding_message.appendChild(regenerate_button);
 }function get_messages_from_dom() {
     const chatbox = $("chatbox");
     const message_elements = chatbox.querySelectorAll("p.message");
@@ -264,7 +271,7 @@ function remove_holding_message(holding_message_data, new_message) {
      },
      body: JSON.stringify({
       model: model,
-      messages: get_messages_from_dom().slice(0, index + 1),
+      messages: get_messages_from_dom().slice(0, index),
       max_tokens: max_tokens,
       temperature: temperature,
       top_p: top_p,
@@ -399,6 +406,49 @@ function remove_holding_message(holding_message_data, new_message) {
     });
     const data = await response.json();
     return data.data;
-   }
+   }async function regenerate_message(index) {
+  var api_key = $("apikey").value;
+  var model = $("model").value;
+  var max_tokens = parseInt($("max_tokens").value);
+  var temperature = parseFloat($("temperature").value);
+  var top_p = parseFloat($("top_p").value);
+  var presence_penalty = parseFloat($("presence_penalty").value);
+  var frequency_penalty = parseFloat($("frequency_penalty").value);
+
+  var regenerate_button = document.querySelectorAll("button.ml-2")[index - messages.findIndex((message) => message.role === "assistant")];
+  regenerate_button.disabled = true;
+  regenerate_button.innerText = "Regenerating...";
+
+  var response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + api_key,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: get_messages_from_dom().slice(0, index + 1),
+      max_tokens: max_tokens,
+      temperature: temperature,
+      top_p: top_p,
+      presence_penalty: presence_penalty,
+      frequency_penalty: frequency_penalty,
+    }),
+  });
+
+  var data = await response.json();
+  if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
+    var message = data["choices"][0]["message"]["content"];
+    messages[index].content = message;
+    var assistant_message = document.querySelectorAll("p.assistant-message")[index - messages.findIndex((message) => message.role === "assistant")];
+    assistant_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
+    regenerate_button.disabled = false;
+    regenerate_button.innerText = "Regenerate";
+    assistant_message.appendChild(regenerate_button);
+  } else {
+    regenerate_button.disabled = false;
+    regenerate_button.innerText = "Regenerate";
+  }
+}
   </script>
 </body></html>
