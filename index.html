@@ -135,10 +135,10 @@ function add_system_message(content) {
 async function send_message() {
   var input = $("user_input").value;
   $("user_input").value = "";
-  input = input.replace(
-    /^\/source\/$/gm,
-    "```html\n" + $("editor").textContent.replace(/^\s+/gm, "") + "\n```"
-  );
+input = input.replace(
+/^\/source\/$/gm,
+"```html\n" + $("editor").textContent.replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```"
+);
      messages.push({ id: messageId, role: "user", content: input });    
   var user_message = document.createElement("p");
   user_message.className = "message user-message";user_message.setAttribute("data-id", messageId);
@@ -309,7 +309,7 @@ function remove_holding_message(holding_message_data, new_message) {
    }
    editor.addEventListener("input", update_token_count);
    function update_token_count() {
-    const content = editor.textContent.replace(/^\s+/gm, "");
+    const content = editor.textContent.replace(/^\s+|\s+$/gm, "").replace(/\n/g, "");
     const encoded = GPTTokenizer_cl100k_base.encode(content);
     const token_count = encoded.length;
     $("token_count").textContent = `Tokens: ${token_count}`;
