@@ -344,51 +344,8 @@ holding_message_data.holding_message.appendChild(regenerate_button);
     });
     const data = await response.json();
     return data.data;
-   }async function regenerate_message(index) {
-  var api_key = $("apikey").value;
-  var model = $("model").value;
-  var max_tokens = parseInt($("max_tokens").value);
-  var temperature = parseFloat($("temperature").value);
-  var top_p = parseFloat($("top_p").value);
-  var presence_penalty = parseFloat($("presence_penalty").value);
-  var frequency_penalty = parseFloat($("frequency_penalty").value);
-
-  var regenerate_button = document.querySelectorAll("button.ml-2")[index - messages.findIndex((message) => message.role === "assistant")];
-  regenerate_button.disabled = true;
-  regenerate_button.innerText = "Regenerating...";
-
-  var response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + api_key,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: model,
-      messages: get_messages_from_dom().slice(0, index + 1),
-      max_tokens: max_tokens,
-      temperature: temperature,
-      top_p: top_p,
-      presence_penalty: presence_penalty,
-      frequency_penalty: frequency_penalty,
-    }),
-  });
-
-  var data = await response.json();
-  if (data["choices"] && data["choices"][0] && data["choices"][0]["message"]) {
-    var message = data["choices"][0]["message"]["content"];
-    messages[index].content = message;
-    var assistant_message = document.querySelectorAll("p.assistant-message")[index - messages.findIndex((message) => message.role === "assistant")];
-    assistant_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(message);
-    regenerate_button.disabled = false;
-    regenerate_button.innerText = "Regenerate";
-    assistant_message.appendChild(regenerate_button);
-  } else {
-    regenerate_button.disabled = false;
-    regenerate_button.innerText = "Regenerate";
-  }
-}async function callOpenAI(messages) {const {apikey, model, max_tokens, temperature, top_p, presence_penalty, frequency_penalty} = load()
-
+   }async function callOpenAI(messages) {const {apikey, model, max_tokens, temperature, top_p, presence_penalty, frequency_penalty} = load()
+console.log(apikey,'key')
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -412,6 +369,7 @@ function get(id){
         if (value) {
             $(id).value = value;
         }
+        return isNaN(parseFloat(value)) ? value : parseFloat(value)
 }
 function load(){
     const localStorageKeys = ["apikey", "token", "repo", "model", "max_tokens", "temperature", "top_p", "presence_penalty", "frequency_penalty"];
