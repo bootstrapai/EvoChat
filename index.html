@@ -80,7 +80,7 @@
    </div>
   </div>
   <script>
-   var messages = [];   var messageQueue = [];   var converter = new showdown.Converter();
+   var messages = [];   var messageQueue = [];   var converter = new showdown.Converter();var holdingMessages = [];
    var $ = document.getElementById.bind(document);
    function add_system_message(content) {
     var chatbox = $("chatbox");
@@ -153,17 +153,17 @@ async function send_message() {
   user_message.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
   $("chatbox").appendChild(user_message);
   messageQueue.push(input);
+  var holding_message = add_holding_message();
+  $("chatbox").appendChild(holding_message.holding_message);
+  holdingMessages.push(holding_message);
   if (messageQueue.length === 1) {
     process_message_queue();
-  } else {
-    add_holding_message();
-  }
+  } 
 }
 
 async function process_message_queue() {
   if (messageQueue.length === 0) return;
   var input = messageQueue[0];
-  var holding_message = add_holding_message();
   var api_key = $("apikey").value;
   var model = $("model").value;
   var num_responses = parseInt($("num_responses").value);
@@ -199,13 +199,15 @@ async function process_message_queue() {
   });
 
   var data = await response.json();
-  remove_holding_message(holding_message);
 
   if (data["choices"]) {
     data["choices"].forEach((choice, index) => {
       if (choice["message"]) {
         var message = choice["message"]["content"];
         messages.push({ role: "assistant", content: message });
+
+        // Remove the corresponding holding message
+        var holding_message = holdingMessages.shift();
         remove_holding_message(holding_message, message);
       }
     });
