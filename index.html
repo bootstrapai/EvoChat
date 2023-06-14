@@ -1,14 +1,18 @@
 <html><head>
   <title>Chat with Assistant</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://unpkg.com/gpt-tokenizer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+  <script src="https://unpkg.com/gpt-tokenizer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/mode/xml/xml.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
   <script src="https://unpkg.com/prettier@latest/standalone.js"></script>
   <script src="https://unpkg.com/prettier@latest/parser-html.js"></script>
   <style>
    .user-message {
     background-color: #e0f7fa;
    }
+    #editor {
+  height: 100%;
+}
    .assistant-message {
     background-color: #f1f8e9;
    }
@@ -116,8 +120,14 @@ function add_system_message(content) {
    You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
    RESPOND WITH MARKDOWN`
     );
-    const editor = $("editor");
-    editor.textContent = initialHTML;
+    editor = CodeMirror(document.getElementById('editor'), {
+        mode: 'xml',
+        theme: 'default',
+        lineNumbers: true,
+        value: initialHTML,
+        viewportMargin: Infinity,
+  		height: "100%"  
+    });
     update_token_count();
     var model_value = localStorage.getItem("model");
     var max_tokens_value = localStorage.getItem("max_tokens");
@@ -137,7 +147,7 @@ async function send_message() {
   $("user_input").value = "";
 input = input.replace(
 /^\/source\/$/gm,
-"```html\n" + $("editor").textContent.replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```"
+"```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```"
 );
      messages.push({ id: messageId, role: "user", content: input });    
   var user_message = document.createElement("p");
@@ -223,7 +233,7 @@ function remove_holding_message(holding_message_data, new_message) {
    async function commit_content() {
     const token = $("token").value;
     const repo_info = $("repo").value.split("/");
-    const content = $("editor").textContent;
+    const content = editor.getValue();
     if (repo_info.length !== 2) {
      alert("Invalid organization/repo name format. Please use 'organization/reponame'.");
      return;
@@ -250,8 +260,7 @@ function remove_holding_message(holding_message_data, new_message) {
     }
    }
    function format_content() {
-    const editor = $("editor");
-    const html_code = editor.textContent;
+    const html_code = editor.getValue();
     const formatted_code = prettier.format(html_code, {
      parser: "html",
      plugins: prettierPlugins,
@@ -259,14 +268,13 @@ function remove_holding_message(holding_message_data, new_message) {
      tabWidth: 1,
      htmlWhitespaceSensitivity: "ignore",
     });
-    editor.textContent = formatted_code;
+    editor.setValue(formatted_code);
    }
    function refresh_content() {
-    $("editor").textContent = initialHTML;
+    editor.setValue(initialHTML);
    }
    async function handle_content(action) {
-    const editor = $("editor");
-    const content = editor.textContent;
+    const content = editor.getValue();
     switch (action) {
      case "spawn":
       const blob = new Blob([content], { type: "text/html" });
@@ -285,7 +293,7 @@ function remove_holding_message(holding_message_data, new_message) {
       commit_content();
       break;
      case "refresh":
-      editor.textContent = initialHTML;
+      editor.setValue(initialHTML);
       break;
     }
    }
@@ -294,7 +302,7 @@ function remove_holding_message(holding_message_data, new_message) {
     const editor = $("editor");
     const highlighted_text = window.getSelection().toString();
     if (highlighted_text) {
-     const editor_content = editor.textContent;
+     const editor_content = editor.getValue();
      const index = editor_content.indexOf(highlighted_text);
      if (index !== -1) {
       const range = document.createRange();
@@ -309,7 +317,7 @@ function remove_holding_message(holding_message_data, new_message) {
    }
    editor.addEventListener("input", update_token_count);
    function update_token_count() {
-    const content = editor.textContent.replace(/^\s+|\s+$/gm, "").replace(/\n/g, "");
+    const content = editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "");
     const encoded = GPTTokenizer_cl100k_base.encode(content);
     const token_count = encoded.length;
     $("token_count").textContent = `Tokens: ${token_count}`;
