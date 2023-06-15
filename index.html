@@ -113,7 +113,8 @@
        const models = await fetch_models();
        const modelSelect = $("model");
        modelSelect.innerHTML = "";
-
+var chatbox = $("chatbox");
+chatbox.addEventListener('mouseup', handleTextSelection);
        models.forEach((model) => {
         const option = document.createElement("option");
         option.value = model.id;
@@ -433,6 +434,17 @@ async function regenerate_message(id) {
         holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + id + ")'>Regenerate</button>";
         holding_message_data.holding_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
     }
+}
+    function handleTextSelection() {
+  var selectedText = window.getSelection().toString();
+  if (selectedText) {
+    var editorContent = editor.getValue();
+    var index = editorContent.indexOf(selectedText);
+    if (index !== -1) {
+      editor.setSelection(editor.posFromIndex(index), editor.posFromIndex(index + selectedText.length));
+      editor.scrollIntoView({ line: editor.posFromIndex(index).line, ch: editor.posFromIndex(index).ch }, 200);
+    }
+  }
 }
   </script>
  
