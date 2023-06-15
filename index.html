@@ -118,6 +118,13 @@ function add_system_message(content) {
      option.textContent = model.id;
      modelSelect.appendChild(option);
     });
+
+    const inputs = document.querySelectorAll("input, select");
+    inputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        localStorage.setItem(input.id, input.value);
+      });
+    });
     add_system_message(
      `You are an expert web developer with an IQ of 120.
    The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
