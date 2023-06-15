@@ -99,7 +99,7 @@
        system_message.setAttribute("contenteditable", "true");
        system_message.setAttribute("data-id", messageId);
        system_message.addEventListener("input", () => {
-           messages.find(m => m.id === messageId).content = system_message.textContent;
+           messages.find(m => m.id === messageId).content = sanitizeInput(system_message.textContent);
        });
        system_message.className = "message system-message";
        system_message.innerHTML = "<b>System:</b> " + converter.makeHtml(content);
@@ -131,7 +131,8 @@ chatbox.addEventListener('mouseup', handleTextSelection);
         `You are an expert web developer with an IQ of 120.
       The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
       You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature including complete function code with no omissions.
-      You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
+      You will put each function definition within a dedicated markdown code block for easier parsing.
+	  You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
       RESPOND WITH MARKDOWN`
        );
        editor = CodeMirror(document.getElementById('editor'), {
@@ -177,7 +178,6 @@ async function send_message() {
     });
     user_message.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
     $("chatbox").appendChild(user_message);
-    user_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
     messageQueue.push(input);
     var holding_message = add_holding_message();
     $("chatbox").appendChild(holding_message.holding_message);
@@ -235,7 +235,6 @@ function add_holding_message() {
    function remove_holding_message(holding_message_data, new_message) {
        var chatbox = $("chatbox");
        holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + holding_message_data.holding_message.dataset.id + ")'>Regenerate</button>";
-       holding_message_data.holding_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
        clearInterval(holding_message_data.timerInterval);
    }
 function get_messages_from_dom(id) {
@@ -424,12 +423,7 @@ function get_messages_from_dom(id) {
        function find_message_node(id) {
        return document.querySelector(`[data-id='${id}']`);
    }
-   function renderCodeBlock(element) {
-       const code = element.textContent;
-       element.textContent = '';
-       CodeMirror.runMode(code, "htmlmixed", element);
-       element.classList.add('cm-s-monokai');
-   }
+
    function updateHoldingMessage(message) {
        const holdingMessage = holdingMessages[0];
        holdingMessage.holding_message.innerHTML = "<b>Assistant:</b> " + message;
@@ -444,7 +438,6 @@ async function regenerate_message(id) {
         const new_message = data["choices"][0]["message"]["content"];
         remove_holding_message(holding_message_data, new_message);
         holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + id + ")'>Regenerate</button>";
-        holding_message_data.holding_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
     }
 }
 function handleTextSelection() {
@@ -458,6 +451,12 @@ function handleTextSelection() {
     }
   }
 }
+    function sanitizeInput(input) {
+  input = input.replace(/^\/source\/$/gm, "```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
+  return converter.makeHtml(input);
+}
+
+
 </script>
  
 
