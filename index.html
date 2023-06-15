@@ -153,6 +153,18 @@ chatbox.addEventListener('mouseup', handleTextSelection);
 async function send_message() {
     var input = $("user_input").value;
     $("user_input").value = "";
+    if (input.startsWith("@")) {
+      const modelName = input.substring(1).trim();
+      const models = await fetch_models();
+
+      // Find the model object with the matching name
+      const selectedModel = models.find((model) => model.id === modelName);
+
+      // If a valid model is found, set the 'model' variable
+      if (selectedModel) {
+        $("model").value = selectedModel.id;
+      }
+    }
     input = input.replace(/^\/source\/$/gm,"```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
     messages.push({ id: messageId, role: "user", content: input });
     var user_message = document.createElement("p");
@@ -224,6 +236,7 @@ function add_holding_message() {
        var chatbox = $("chatbox");
        holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + holding_message_data.holding_message.dataset.id + ")'>Regenerate</button>";
        holding_message_data.holding_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
+       appendFunctionToEditor(new_message);
        clearInterval(holding_message_data.timerInterval);
    }
 function get_messages_from_dom(id) {
@@ -435,7 +448,7 @@ async function regenerate_message(id) {
         holding_message_data.holding_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
     }
 }
-    function handleTextSelection() {
+function handleTextSelection() {
   var selectedText = window.getSelection().toString();
   if (selectedText) {
     var editorContent = editor.getValue();
@@ -446,7 +459,24 @@ async function regenerate_message(id) {
     }
   }
 }
-  </script>
+function appendFunctionToEditor(message) {
+  const functionRegex = /function\s+[\w$]+\s*\([^\)]*\)\s*\{(?:[^}`]|`(?:\\`|[^`])*`)*\}/gm;
+  const matches = message.match(functionRegex);
+  if (matches) {
+    matches.forEach((match) => {
+      console.log(match);
+      const functionName = match.split("(")[0].split(" ")[1];
+      const editorContent = editor.getValue();
+      const functionExists = new RegExp(`(function\\s+${functionName}\\s*\\([^\\)]*\\)\\s*\\{[^}]*\\})`, "g").test(editorContent);
+      if (!functionExists) {
+        const lastScriptTagIndex = editorContent.lastIndexOf(`<\/script>`);
+        const updatedContent = editorContent.slice(0, lastScriptTagIndex) + "\n\n" + match + "\n" + editorContent.slice(lastScriptTagIndex);
+        editor.setValue(updatedContent);
+      }
+    });
+  }
+}
+</script>
  
 
 </body></html>
