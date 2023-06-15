@@ -1,13 +1,12 @@
-<html>
- <head>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet" />
+<html><head>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://unpkg.com/gpt-tokenizer"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/mode/xml/xml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/addon/runmode/runmode.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/theme/monokai.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/theme/monokai.min.css" rel="stylesheet">
 
   <script src="https://unpkg.com/prettier@latest/standalone.js"></script>
   <script src="https://unpkg.com/prettier@latest/parser-html.js"></script>
@@ -57,25 +56,25 @@
    </div>
    <div id="config-panel" class="hidden flex flex-col space-y-4 mt-4">
     <label for="apikey">OpenAI API Key:</label>
-    <input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" class="w-full p-2 border rounded" />
+    <input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" class="w-full p-2 border rounded">
     <label for="num_responses">Number of Responses:</label>
-    <input id="num_responses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded" onchange="set('num_responses')" />
+    <input id="num_responses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded" onchange="set('num_responses')">
     <label for="model">Model:</label>
     <select id="model" class="w-full p-2 border rounded" onchange="set('model')"></select>
     <label for="max_tokens">Max Tokens:</label>
-    <input id="max_tokens" onchange="set('max_tokens')" type="number" value="4000" class="w-full p-2 border rounded" />
+    <input id="max_tokens" onchange="set('max_tokens')" type="number" value="4000" class="w-full p-2 border rounded">
     <label for="temperature">Temperature:</label>
-    <input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded" onchange="set('max_tokens')" />
+    <input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded" onchange="set('max_tokens')">
     <label for="top_p">Top-p:</label>
-    <input id="top_p" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded" onchange="set('top_p')" />
+    <input id="top_p" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded" onchange="set('top_p')">
     <label for="presence_penalty">Presence Penalty:</label>
-    <input id="presence_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded" />
+    <input id="presence_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
     <label for="frequency_penalty">Frequency Penalty:</label>
-    <input id="frequency_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded" />
+    <input id="frequency_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
     <label for="token">Personal Access Token:</label>
-    <input id="token" type="password" placeholder="Enter your personal access token here" class="w-full p-2 border rounded mb-2" />
+    <input id="token" type="password" placeholder="Enter your personal access token here" class="w-full p-2 border rounded mb-2">
     <label for="repo">Organization/Repo Name:</label>
-    <input id="repo" type="text" placeholder="Enter organization/repo name here" class="w-full p-2 border rounded mb-4" />
+    <input id="repo" type="text" placeholder="Enter organization/repo name here" class="w-full p-2 border rounded mb-4">
    </div>
   </div>
   <div class="w-1/2 flex flex-col h-screen p-4 box-border">
@@ -150,31 +149,31 @@
      }
    });
       };
-   async function send_message() {
-     var input = $("user_input").value;
-     $("user_input").value = "";
-     input = input.replace(/^\/source\/$/gm,"```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
-     messages.push({ id: messageId, role: "user", content: input });
-     var user_message = document.createElement("p");
-     user_message.className = "message user-message";
-     user_message.setAttribute("data-id", messageId);
-     user_message.setAttribute("contenteditable", "true");
-     user_message.addEventListener("input", () => {
-       messages[messages.length - 1].content = user_message.textContent;
-     });
-     user_message.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
-     $("chatbox").appendChild(user_message);
-     user_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
-     messageQueue.push(input);
-     var holding_message = add_holding_message();
-     $("chatbox").appendChild(holding_message.holding_message);
-     holdingMessages.push(holding_message);
-     if (messageQueue.length === 1) {
-       process_message_queue();
-     }
-     chatbox.scrollTop = chatbox.scrollHeight;
-     messageId++;
-   }
+async function send_message() {
+    var input = $("user_input").value;
+    $("user_input").value = "";
+    input = input.replace(/^\/source\/$/gm,"```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
+    messages.push({ id: messageId, role: "user", content: input });
+    var user_message = document.createElement("p");
+    user_message.className = "message user-message";
+    user_message.setAttribute("data-id", messageId);
+    messageId++;
+    user_message.setAttribute("contenteditable", "true");
+    user_message.addEventListener("input", () => {
+        messages[messages.length - 1].content = user_message.textContent;
+    });
+    user_message.innerHTML = "<b>You:</b> " + converter.makeHtml(input);
+    $("chatbox").appendChild(user_message);
+    user_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
+    messageQueue.push(input);
+    var holding_message = add_holding_message();
+    $("chatbox").appendChild(holding_message.holding_message);
+    holdingMessages.push(holding_message);
+    if (messageQueue.length === 1) {
+        process_message_queue();
+    }
+    chatbox.scrollTop = chatbox.scrollHeight;
+}
 
    async function process_message_queue() {
          if (messageQueue.length === 0) return;
@@ -202,39 +201,51 @@
      }
    }
 
-   function add_holding_message() {
-     var chatbox = $("chatbox");
-     var holding_message = document.createElement("p");
-     holding_message.className = "message assistant-message";
-     holding_message.innerHTML = "<b>Assistant:</b> <span class='timer'>0</span> seconds";
-     chatbox.appendChild(holding_message);
-     let timer = 0;
-     const timerInterval = setInterval(() => {
-       timer += 1;
-       holding_message.querySelector(".timer").textContent = timer;
-     }, 1000);
-       holding_message.setAttribute("data-id", messageId);messages.push({ id: messageId, role: "assistant", content: "" });
-       messageId++;
-     return { holding_message, timerInterval };
-   }
+function add_holding_message() {
+    var chatbox = $("chatbox");
+    var holding_message = document.createElement("p");
+    holding_message.className = "message assistant-message";
+    holding_message.innerHTML = "<b>Assistant:</b> <span class='timer'>0</span> seconds <button class='regenerate-button' style='background-color: red;' disabled>Regenerate</button>";
+    chatbox.appendChild(holding_message);
+    let timer = 0;
+    const timerInterval = setInterval(() => {
+        timer += 1;
+        holding_message.querySelector(".timer").textContent = timer;
+    }, 1000);
+    holding_message.setAttribute("data-id", messageId);
+    messages.push({ id: messageId, role: "assistant", content: "" });
+    messageId++; // increment the messageId here
+    return { holding_message, timerInterval };
+}
+
 
    function remove_holding_message(holding_message_data, new_message) {
        var chatbox = $("chatbox");
-       holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message);
+       holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + holding_message_data.holding_message.dataset.id + ")'>Regenerate</button>";
        holding_message_data.holding_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
        clearInterval(holding_message_data.timerInterval);
    }
-   function get_messages_from_dom() {
-       const chatbox = $("chatbox");
-       const message_elements = chatbox.querySelectorAll("p.message");
-       const messages_from_dom = [];
-       message_elements.forEach((message) => {
+function get_messages_from_dom(id) {
+    const chatbox = $("chatbox");
+    const message_elements = chatbox.querySelectorAll("p.message");
+    const messages_from_dom = [];
+
+    let index = 0;
+    for (const message of message_elements) {
+        index++;
         const role = message.classList.contains("user-message") ? "user" : message.classList.contains("assistant-message") ? "assistant" : "system";
-        const content = message.textContent;
-        messages_from_dom.push({ role, content });
-       });
-       return messages_from_dom;
-      }
+        if (role == 'assistant' && message.getAttribute('data-id') == id){
+    		break;
+        }
+        // Exclude the last assistant message, which is the holding message
+        if (!(role === "assistant" && index === message_elements.length - 1)) {
+            const content = message.textContent;
+            messages_from_dom.push({ role, content });
+        }
+    };
+
+    return messages_from_dom;
+}
 
       function toggle_panel(panel_id) {
        var panel = $(panel_id);
@@ -410,6 +421,20 @@
        const holdingMessage = holdingMessages[0];
        holdingMessage.holding_message.innerHTML = "<b>Assistant:</b> " + message;
    }
+async function regenerate_message(id) {
+    const messages_before = get_messages_from_dom(id)
+    const message_node = find_message_node(id);
+    const holding_message_data = add_holding_message();
+    message_node.replaceWith(holding_message_data.holding_message);
+    const data = await callOpenAI(messages_before);
+    if (data["choices"]) {
+        const new_message = data["choices"][0]["message"]["content"];
+        remove_holding_message(holding_message_data, new_message);
+        holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + id + ")'>Regenerate</button>";
+        holding_message_data.holding_message.querySelectorAll('code.language-html').forEach(renderCodeBlock);
+    }
+}
   </script>
- </body>
-</html>
+ 
+
+</body></html>
