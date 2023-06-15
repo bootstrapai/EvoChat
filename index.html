@@ -1,5 +1,4 @@
 <html><head>
-  <title>Chat with Assistant</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://unpkg.com/gpt-tokenizer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.js"></script>
@@ -190,7 +189,6 @@ async function process_message_queue() {
         var message = choice["message"]["content"];
         messages.push({ role: "assistant", content: message });
 
-        // Remove the corresponding holding message
         var holding_message = holdingMessages.shift();
         remove_holding_message(holding_message, message);chatbox.scrollTop = chatbox.scrollHeight;
       }
@@ -401,9 +399,9 @@ function set(id){
 }
 function renderCodeBlock(element) {
     const code = element.textContent;
-    element.textContent = '';  // Clear the element
+    element.textContent = '';  
     CodeMirror.runMode(code, "htmlmixed", element);
-    element.classList.add('cm-s-monokai');  // Apply the Monokai theme
+    element.classList.add('cm-s-monokai'); 
 }
 function updateHoldingMessage(message) {
     const holdingMessage = holdingMessages[0];
