@@ -90,6 +90,7 @@
    </div>
   </div>
   <script>
+    const spawnedTabs = {};
    var messageId = 0;
       var messages = [];   var messageQueue = [];   var converter = new showdown.Converter();var holdingMessages = [];
       var $ = document.getElementById.bind(document);
@@ -141,32 +142,31 @@ chatbox.addEventListener('mouseup', handleTextSelection);
    });
       };
 async function send_message() {
-  var input = $("user_input").value;
+  var input = $("user_input").value.replace(/^\/source\/$/gm, "```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
   $("user_input").value = "";
 
-  if (input.startsWith("@")) {
-    const modelName = input.substring(1).trim();
-    const models = await fetch_models();
-    const selectedModel = models.find((model) => model.id === modelName);
-    if (selectedModel) {
-      $("model").value = selectedModel.id;
-    }
-  }
-
-  input = input.replace(/^\/source\/$/gm, "```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
+  // Add the user message to the chat log
   messages.push({ id: messageId, role: "user", content: input });
-
   process_message("user", "<b>You:</b> " + converter.makeHtml(input), messageId);
   messageId++;
 
-  var holding_message = add_holding_message();
-  $("chatbox").appendChild(holding_message.holding_message);
-  holdingMessages.push(holding_message);
+    // Add a holding message
+    var holding_message = add_holding_message();
+    $("chatbox").appendChild(holding_message.holding_message);
+    holdingMessages.push(holding_message);
+  // Check if the message starts with @name
+  const nameMatch = input.match(/^@(\w+)/);
+  if (nameMatch && spawnedTabs[nameMatch[1]]) {
+    const tabName = nameMatch[1];
+    input = input.replace(`@${tabName}`, "").trim();
+    spawnedTabs[tabName].postMessage(input, "*");
 
-  if (messageQueue.length === 0) {
-    messageQueue.push(input);
-    process_message_queue();
-  }
+  } else {
+
+
+      messageQueue.push(input);
+      process_message_queue();
+    }
   chatbox.scrollTop = chatbox.scrollHeight;
 }
 
@@ -299,10 +299,13 @@ async function commit_content() {
        const content = editor.getValue();
        switch (action) {
         case "spawn":
-         const blob = new Blob([content], { type: "text/html" });
-         const url = URL.createObjectURL(blob);
-         window.open(url, "_blank");
-         break;
+          const tabName = prompt("Enter a name for the spawned tab:");
+          if (tabName) {
+            const blob = new Blob([content], { type: "text/html" });
+            const url = URL.createObjectURL(blob);
+            spawnedTabs[tabName] = window.open(url, "_blank");
+          }
+          break;
         case "copy":
          const range = document.createRange();
          range.selectNodeContents(editor);
@@ -488,6 +491,15 @@ function removeOuterCodeBlocks(input) {
 
   return input;
 }
+window.addEventListener("message", async (event) => {
+  const data = event.data;
+  if (typeof data === "string") {
+    const message = { role: "assistant", content: data };
+    messages.push(message);
+    process_message("assistant", converter.makeHtml(data), messageId);
+    messageId++;
+  }
+});
 </script>
  
 
