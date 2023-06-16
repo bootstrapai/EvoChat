@@ -244,35 +244,43 @@ function get_messages_from_dom(id) {
        var panel = $(panel_id);
        panel.classList.toggle("hidden");
       }
-      async function commit_content() {
-       const token = $("token").value;
-       const repo_info = $("repo").value.split("/");
-       const content = editor.getValue();
-       if (repo_info.length !== 2) {
-        alert("Invalid organization/repo name format. Please use 'organization/reponame'.");
-        return;
-       }
-       const octokit = new Octokit({ auth: token });
-       const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
-       const my_octokit = new MyOctokit({ auth: token });
-       try {
-        const { updated, data } = await my_octokit.createOrUpdateTextFile({
-         owner: repo_info[0],
-         repo: repo_info[1],
-         path: "index.html",
-         content: content,
-         message: "Update index.html",
-        });
-        if (updated) {
-         alert("Successfully committed the content to index.html");
-        } else {
-         alert("Failed to commit the content.");
-        }
-       } catch (error) {
-        console.error(error);
-        alert("Error committing the content. Please check the console for more details.");
-       }
-      }
+async function commit_content() {
+  const token = $("token").value;
+  const repo_info = $("repo").value.split("/");
+  const content = editor.getValue();
+
+  if (repo_info.length !== 2) {
+    alert("Invalid organization/repo name format. Please use 'organization/reponame'.");
+    return;
+  }
+
+  const firstUserMessage = messages.find((message) => message.role === "user");
+  let commitMessage = firstUserMessage ? firstUserMessage.content : "Update index.html";
+  commitMessage = commitMessage.replace(/```[\s\S]*?```/g, "").trim();
+
+  const octokit = new Octokit({ auth: token });
+  const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
+  const my_octokit = new MyOctokit({ auth: token });
+
+  try {
+    const { updated, data } = await my_octokit.createOrUpdateTextFile({
+      owner: repo_info[0],
+      repo: repo_info[1],
+      path: "index.html",
+      content: content,
+      message: commitMessage,
+    });
+
+    if (updated) {
+      alert("Successfully committed the content to index.html");
+    } else {
+      alert("Failed to commit the content.");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Error committing the content. Please check the console for more details.");
+  }
+}
       function format_content() {
        const html_code = editor.getValue();
        const formatted_code = prettier.format(html_code, {
