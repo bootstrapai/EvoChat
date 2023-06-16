@@ -255,7 +255,7 @@ async function commit_content() {
   }
 
   const firstUserMessage = messages.find((message) => message.role === "user");
-  let commitMessage = firstUserMessage ? firstUserMessage.content : "Update index.html";
+  let commitMessage = firstUserMessage ? removeOuterCodeBlocks(firstUserMessage.content) : "Update index.html";
   commitMessage = commitMessage.replace(/```[\s\S]*?```/g, "").trim();
 
   const octokit = new Octokit({ auth: token });
@@ -478,7 +478,16 @@ function process_message(role, content, messageId, replaceNode = null, increment
     messageId++;
   }
 }
+function removeOuterCodeBlocks(input) {
+  const firstBackticksIndex = input.indexOf("```");
+  const lastBackticksIndex = input.lastIndexOf("```");
 
+  if (firstBackticksIndex !== -1 && lastBackticksIndex !== -1 && firstBackticksIndex !== lastBackticksIndex) {
+    return input.slice(0, firstBackticksIndex) + input.slice(lastBackticksIndex + 3);
+  }
+
+  return input;
+}
 </script>
  
 
