@@ -493,6 +493,12 @@ function removeOuterCodeBlocks(input) {
 }
 window.addEventListener("message", async (event) => {
   const data = event.data;
+
+  if (event.source === window.opener) {
+    event.source.postMessage("ACK", "*");
+    return;
+  }
+
   if (typeof data === "string") {
     const message = { role: "assistant", content: data };
     messages.push(message);
