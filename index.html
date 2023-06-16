@@ -444,6 +444,7 @@ function handleTextSelection() {
   input = input.replace(/^\/source\/$/gm, "```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
   return converter.makeHtml(input);
 }
+    
 function process_message(role, content, messageId, replaceNode = null, incrementId = true) {
   const chatbox = document.getElementById("chatbox");
   const message = document.createElement("p");
