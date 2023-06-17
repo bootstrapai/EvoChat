@@ -159,8 +159,7 @@ async function send_message() {
   if (nameMatch && spawnedTabs[nameMatch[1]]) {
     const tabName = nameMatch[1];
     input = input.replace(`@${tabName}`, "").trim();
-    spawnedTabs[tabName].postMessage(input, "*");
-
+    spawnedTabs[tabName].postMessage({ type: "user_message", content: input }, "*");
   } else {
 
 
@@ -493,19 +492,26 @@ function removeOuterCodeBlocks(input) {
 }
 window.addEventListener("message", async (event) => {
   const data = event.data;
-
   if (event.source === window.opener) {
-    event.source.postMessage("ACK", "*");
-    return;
-  }
-
-  if (typeof data === "string") {
-    const message = { role: "assistant", content: data };
-    messages.push(message);
-    process_message("assistant", converter.makeHtml(data), messageId);
-    messageId++;
+    if (data.type === "user_message") {
+      handle_incoming_message(event);
+    }
+  } else {
+    if (data.type === "assistant_response") {
+      process_message("assistant", converter.makeHtml(data.content), messageId);
+    }
   }
 });
+function handle_incoming_message(event) {
+  const data = event.data;
+  if (data.type === "user_message") {
+    process_message("user", "<b>User:</b> " + converter.makeHtml(data.content), messageId);
+    // Perform the operation and send the response back
+    const response = "Response from spawned tab";
+    process_message("assistant", "<b>Assistant:</b> " + converter.makeHtml(response), messageId);
+    event.source.postMessage({ type: "assistant_response", content: response }, "*");
+  }
+}
 </script>
  
 
