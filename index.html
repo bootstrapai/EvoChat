@@ -243,35 +243,32 @@ function get_messages_from_dom(id) {
        var panel = $(panel_id);
        panel.classList.toggle("hidden");
       }
-async function commit_content() {
+async function commit({ message, file, content }) {
   const token = $("token").value;
   const repo_info = $("repo").value.split("/");
-  const content = editor.getValue();
   if (repo_info.length < 2 || repo_info.length > 3) {
-    alert(
-      "Invalid format. Please use 'organization/reponame' or 'organization/reponame/filename'."
-    );
+    alert("Invalid format. Please use 'organization/reponame' or 'organization/reponame/filename'.");
     return;
   }
   const firstUserMessage = messages.find((message) => message.role === "user");
-  let commitMessage = firstUserMessage
+  message ||= firstUserMessage
     ? removeOuterCodeBlocks(firstUserMessage.content)
-    : "Update index.html";
-  commitMessage = commitMessage.replace(/```[\s\S]*?```/g, "").trim();
+    : "Update " + file;
+  message = message.replace(/```[\s\S]*?```/g, "").trim();
   const octokit = new Octokit({ auth: token });
   const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
   const my_octokit = new MyOctokit({ auth: token });
-  const filePath = repo_info[2] ? repo_info[2] : "index.html";
+
   try {
     const { updated, data } = await my_octokit.createOrUpdateTextFile({
       owner: repo_info[0],
       repo: repo_info[1],
-      path: filePath,
-      content: content,
-      message: commitMessage,
+      path: file,
+      content,
+      message,
     });
     if (updated) {
-      alert(`Successfully committed the content to ${filePath}`);
+      alert(`Successfully committed the content to ${file}`);
     } else {
       alert("Failed to commit the content.");
     }
@@ -280,7 +277,15 @@ async function commit_content() {
     alert("Error committing the content. Please check the console for more details.");
   }
 }
-      function format_content() {
+async function commit_content() {
+  const token = $("token").value;
+  const repo_info = $("repo").value.split("/");
+  const content = editor.getValue();
+  const file = repo_info[2] ? repo_info[2] : "index.html";
+  
+  commit({content, file})
+}
+function format_content() {
        const html_code = editor.getValue();
        const formatted_code = prettier.format(html_code, {
         parser: "html",
