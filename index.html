@@ -517,6 +517,12 @@ function handle_incoming_message(event) {
     event.source.postMessage({ type: "assistant_response", content: response }, "*");
   }
 }
+    
+let opener = false;
+(function checkOpener(){
+   opener ||= window.opener
+   opener && !window.opener ? window.close() : requestIdleCallback(checkOpener)
+})()
 </script>
  
 
