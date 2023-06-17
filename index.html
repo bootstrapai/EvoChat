@@ -156,16 +156,21 @@ async function send_message() {
     holdingMessages.push(holding_message);
   // Check if the message starts with @name
   const nameMatch = input.match(/^@(\w+)/);
-  if (nameMatch && spawnedTabs[nameMatch[1]]) {
+  if (nameMatch) {
     const tabName = nameMatch[1];
     input = input.replace(`@${tabName}`, "").trim();
-    spawnedTabs[tabName].postMessage({ type: "user_message", content: input }, "*");
+    localStorage.setItem("message",
+      JSON.stringify({
+        type: "user_message",
+        content: input,
+        targetTab: tabName,
+        senderTab: getTabName()
+      })
+    );
   } else {
-
-
-      messageQueue.push(input);
-      process_message_queue();
-    }
+    messageQueue.push(input);
+    process_message_queue();
+  }
   chatbox.scrollTop = chatbox.scrollHeight;
 }
 
@@ -306,7 +311,7 @@ function format_content() {
           const tabName = prompt("Enter a name for the spawned tab:");
           if (tabName) {
             const blob = new Blob([content], { type: "text/html" });
-            const url = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob) + "#" + tabName;
             spawnedTabs[tabName] = window.open(url, "_blank");
           }
           break;
@@ -495,26 +500,30 @@ function removeOuterCodeBlocks(input) {
 
   return input;
 }
-window.addEventListener("message", async (event) => {
-  const data = event.data;
-  if (event.source === window.opener) {
-    if (data.type === "user_message") {
-      handle_incoming_message(event);
-    }
-  } else {
-    if (data.type === "assistant_response") {
-      process_message("assistant", converter.makeHtml(data.content), messageId);
+window.addEventListener("storage", (event) => {
+  if (event.key === "message") {
+    const messageData = JSON.parse(event.newValue);
+    if (messageData.targetTab === getTabName()) {
+      if (messageData.type === "user_message") {
+        handle_incoming_message(messageData);
+      } else if (messageData.type === "assistant_response") {
+        process_message("assistant", "<b>Assistant:</b> " + converter.makeHtml(messageData.content), messageId);
+      }
     }
   }
 });
-function handle_incoming_message(event) {
-  const data = event.data;
-  if (data.type === "user_message") {
-    process_message("user", "<b>User:</b> " + converter.makeHtml(data.content), messageId);
-    // Perform the operation and send the response back
+function handle_incoming_message(messageData) {
+  if (messageData.type === "user_message") {
+    process_message("user", "<b>User:</b> " + converter.makeHtml(messageData.content), messageId);
     const response = "Response from spawned tab";
     process_message("assistant", "<b>Assistant:</b> " + converter.makeHtml(response), messageId);
-    event.source.postMessage({ type: "assistant_response", content: response }, "*");
+    localStorage.setItem("message",
+      JSON.stringify({
+        type: "assistant_response",
+        content: response,
+        targetTab: messageData.senderTab
+      })
+    );
   }
 }
     
@@ -523,6 +532,10 @@ let opener = false;
    opener ||= window.opener
    opener && !window.opener ? window.close() : requestIdleCallback(checkOpener)
 })()
+function getTabName() {
+  return window.location.hash.substring(1);
+}
+
 </script>
  
 
