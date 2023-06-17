@@ -247,31 +247,31 @@ async function commit_content() {
   const token = $("token").value;
   const repo_info = $("repo").value.split("/");
   const content = editor.getValue();
-
-  if (repo_info.length !== 2) {
-    alert("Invalid organization/repo name format. Please use 'organization/reponame'.");
+  if (repo_info.length < 2 || repo_info.length > 3) {
+    alert(
+      "Invalid format. Please use 'organization/reponame' or 'organization/reponame/filename'."
+    );
     return;
   }
-
   const firstUserMessage = messages.find((message) => message.role === "user");
-  let commitMessage = firstUserMessage ? removeOuterCodeBlocks(firstUserMessage.content) : "Update index.html";
+  let commitMessage = firstUserMessage
+    ? removeOuterCodeBlocks(firstUserMessage.content)
+    : "Update index.html";
   commitMessage = commitMessage.replace(/```[\s\S]*?```/g, "").trim();
-
   const octokit = new Octokit({ auth: token });
   const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
   const my_octokit = new MyOctokit({ auth: token });
-
+  const filePath = repo_info[2] ? repo_info[2] : "index.html";
   try {
     const { updated, data } = await my_octokit.createOrUpdateTextFile({
       owner: repo_info[0],
       repo: repo_info[1],
-      path: "index.html",
+      path: filePath,
       content: content,
       message: commitMessage,
     });
-
     if (updated) {
-      alert("Successfully committed the content to index.html");
+      alert(`Successfully committed the content to ${filePath}`);
     } else {
       alert("Failed to commit the content.");
     }
