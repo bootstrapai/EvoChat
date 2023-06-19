@@ -493,14 +493,15 @@ function removeOuterCodeBlocks(input) {
 
   return input;
 }
-window.addEventListener("storage", (event) => {
+window.addEventListener("storage", async (event) => {
   if (event.key === "message") {
     const messageData = JSON.parse(event.newValue);
     if (messageData.targetTab === getTabName()) {
       if (messageData.type === "user_message") {
         handle_incoming_message(messageData);
       } else if (messageData.type === "assistant_response") {
-        process_message("assistant", "<b>Assistant:</b> " + converter.makeHtml(messageData.content), messageId);
+        const holding_message_data = holdingMessages.shift();
+        remove_holding_message(holding_message_data, messageData.content);
       }
     }
   }
