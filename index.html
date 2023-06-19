@@ -201,25 +201,26 @@ async function send_message() {
    }
 
 function add_holding_message() {
-    var chatbox = $("chatbox");
-    var holding_message = document.createElement("p");
-    holding_message.className = "message assistant-message";
-    holding_message.innerHTML = "<b>Assistant:</b> <span class='timer'>0</span> seconds <button class='regenerate-button' style='background-color: red;' disabled>Regenerate</button>";
-    chatbox.appendChild(holding_message);
-    let timer = 0;
-    const timerInterval = setInterval(() => {
-        timer += 1;
-        holding_message.querySelector(".timer").textContent = timer;
-    }, 1000);
-    holding_message.setAttribute("data-id", messageId);
-    messages.push({ id: messageId, role: "assistant", content: "" });
-    messageId++; // increment the messageId here
-    return { holding_message, timerInterval };
+  var chatbox = $("chatbox");
+  var holding_message = document.createElement("p");
+  holding_message.className = "message assistant-message";
+  holding_message.innerHTML = "<b>Assistant:</b> <span class='timer'>0</span> seconds <button class='regenerate-button' style='background-color: red;' disabled>Regenerate</button>";
+  const uuid = generateUUID();
+  holding_message.setAttribute("data-id", uuid);
+  chatbox.appendChild(holding_message);
+  let timer = 0;
+  const timerInterval = setInterval(() => {
+    timer += 1;
+    holding_message.querySelector(".timer").textContent = timer;
+  }, 1000);
+  holdingMessages.push({ holding_message, timerInterval, uuid });
+  return { holding_message, timerInterval, uuid };
 }
 
 
+
 function remove_holding_message(holding_message_data, new_message) {
-  process_message("assistant", converter.makeHtml(new_message), holding_message_data.holding_message.dataset.id, holding_message_data.holding_message, false);
+  process_message("assistant", converter.makeHtml(new_message), holding_message_data.uuid, holding_message_data.holding_message, false);
   clearInterval(holding_message_data.timerInterval);
 }
 function get_messages_from_dom(id) {
@@ -429,17 +430,17 @@ function format_content() {
        const holdingMessage = holdingMessages[0];
        holdingMessage.holding_message.innerHTML = "<b>Assistant:</b> " + message;
    }
-async function regenerate_message(id) {
-    const messages_before = get_messages_from_dom(id)
-    const message_node = find_message_node(id);
-    const holding_message_data = add_holding_message();
-    message_node.replaceWith(holding_message_data.holding_message);
-    const data = await callOpenAI(messages_before);
-    if (data["choices"]) {
-        const new_message = data["choices"][0]["message"]["content"];
-        remove_holding_message(holding_message_data, new_message);
-        holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + id + ")'>Regenerate</button>";
-    }
+async function regenerate_message(uuid) {
+  const messages_before = get_messages_from_dom(uuid);
+  const message_node = find_message_node(uuid);
+  const holding_message_data = add_holding_message();
+  message_node.replaceWith(holding_message_data.holding_message);
+  const data = await callOpenAI(messages_before);
+  if (data["choices"]) {
+    const new_message = data["choices"][0]["message"]["content"];
+    remove_holding_message(holding_message_data, new_message);
+    holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + uuid + ")'>Regenerate</button>";
+  }
 }
 function handleTextSelection() {
   var selectedText = window.getSelection().toString();
@@ -452,17 +453,16 @@ function handleTextSelection() {
     }
   }
 }
-    function sanitizeInput(input) {
+function sanitizeInput(input) {
   input = input.replace(/^\/source\/$/gm, "```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
   return converter.makeHtml(input);
 }
     
-function process_message(role, content, messageId, replaceNode = null, incrementId = true) {
+function process_message(role, content, uuid, replaceNode = null, incrementId = true) {
   const chatbox = document.getElementById("chatbox");
   const message = document.createElement("p");
   message.setAttribute("contenteditable", "true");
-  message.setAttribute("data-id", messageId);
-
+  message.setAttribute("data-id", uuid);
   if (role === "user") {
     message.className = "message user-message";
     message.innerHTML = "<b>You:</b> " + content;
@@ -473,19 +473,15 @@ function process_message(role, content, messageId, replaceNode = null, increment
     message.className = "message system-message";
     message.innerHTML = "<b>System:</b> " + content;
   }
-
   message.addEventListener("input", () => {
-    messages.find((m) => m.id === messageId).content = sanitizeInput(message.textContent);
+    messages.find((m) => m.uuid === uuid).content = sanitizeInput(message.textContent);
   });
-
   if (replaceNode) {
     chatbox.replaceChild(message, replaceNode);
   } else {
     chatbox.appendChild(message);
   }
-
-  messages.push({ id: messageId, role: role, content: content });
-
+  messages.push({ uuid, role, content });
   if (incrementId) {
     messageId++;
   }
@@ -535,7 +531,13 @@ let opener = false;
 function getTabName() {
   return window.location.hash.substring(1);
 }
-
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0,
+        v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 </script>
  
 
