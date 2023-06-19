@@ -175,7 +175,11 @@
                     "```html\n" + editor.getValue() + "\n```"
                 );
                 $("user_input").value = "";
+   const response = await handleMessageContent(input);
 
+    if (input.startsWith("javascript:")) {
+        process_message("assistant", converter.makeHtml(response), generateUUID());
+    } else {
                 // Add the user message to the chat log
                 const id = generateUUID();
                 const message = { id, role: "user", content: input };
@@ -214,6 +218,7 @@
                     messageQueue.push(message);
                     process_message_queue();
                 }
+          }
                 chatbox.scrollTop = chatbox.scrollHeight;
             }
             async function process_message_queue() {
@@ -730,6 +735,21 @@
                     }
                 );
             }
+          async function handleMessageContent(content) {
+    let response = "";
+    if (content.startsWith("javascript:")) {
+        try {
+            const script = content.slice("javascript:".length);
+            const result = await eval(script);
+            response = `Result: ${result}`;
+        } catch (error) {
+            response = `Error: ${error.message}`;
+        }
+    } else {
+        response = content;
+    }
+    return response;
+}
         </script>
     
 
