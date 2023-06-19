@@ -140,31 +140,34 @@ chatbox.addEventListener('mouseup', handleTextSelection);
        $(id).value = value;
      }
    });
-      };
+};
 async function send_message() {
   var input = $("user_input").value.replace(/^\/source\/$/gm, "```html\n" + editor.getValue() + "\n```");
   $("user_input").value = "";
 
   // Add the user message to the chat log
-    const id = generateUUID();
+  const id = generateUUID();
   messages.push({ id, role: "user", content: input });
   process_message("user", "<b>You:</b> " + converter.makeHtml(input), id);
 
-    // Add a holding message
-    var holding_message = add_holding_message();
-    $("chatbox").appendChild(holding_message.holding_message);
-    holdingMessages.push(holding_message);
+  // Add a holding message
+  var holding_message = add_holding_message();
+  $("chatbox").appendChild(holding_message.holding_message);
+  holdingMessages.push(holding_message);
   // Check if the message starts with @name
   const nameMatch = input.match(/^@(\w+)/);
   if (nameMatch) {
     const tabName = nameMatch[1];
     input = input.replace(`@${tabName}`, "").trim();
+    const queryParams = new URLSearchParams(input.split("?")[1]);
+    const params = Object.fromEntries(queryParams.entries());
     localStorage.setItem("message",
       JSON.stringify({
         type: "user_message",
         content: input,
         targetTab: tabName,
-        senderTab: getTabName()
+        senderTab: getTabName(),
+        params
       })
     );
   } else {
@@ -173,7 +176,6 @@ async function send_message() {
   }
   chatbox.scrollTop = chatbox.scrollHeight;
 }
-
    async function process_message_queue() {
          if (messageQueue.length === 0) return;
        var input = messageQueue[0];
