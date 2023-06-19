@@ -182,7 +182,7 @@
                 messages.push(message);
                 process_message(
                     "user",
-                    converter.makeHtml(input),
+                    "<b>You:</b> " + converter.makeHtml(input),
                     id
                 );
 
@@ -196,14 +196,15 @@
                     const tabName = nameMatch[1];
                     input = input.replace(`@${tabName}`, "").trim();
                     const queryParams = new URLSearchParams(
-                        input.split('\n')[0].split("?")[1]
+                        input.split("?")[1]
                     );
                     const params = Object.fromEntries(queryParams.entries());
                     localStorage.setItem(
                         "message",
                         JSON.stringify({
                             type: "user_message",
-                            content: input.split('\n').slice(1).join('\n'),
+          					id,
+                            content: input,
                             targetTab: tabName,
                             senderTab: getTabName(),
                             params,
@@ -663,8 +664,9 @@
                         if (messageData.type === "user_message") {
                             handle_incoming_message(messageData);
                         } else if (messageData.type === "assistant_response") {
-                            const holding_message_data =
-                                holdingMessages.shift();
+                            const holding_message_data = holdingMessages.find(
+                                (h) => h.user_message_id === messageData.id
+                            );
                             remove_holding_message(
                                 holding_message_data,
                                 messageData.content
@@ -679,19 +681,20 @@
                         "user",
                         "<b>User:</b> " +
                             converter.makeHtml(messageData.content),
-                        messageId
+                        messageData.id
                     );
                     const response = "Response from spawned tab";
                     process_message(
                         "assistant",
                         "<b>Assistant:</b> " + converter.makeHtml(response),
-                        messageId
+                        messageData.id
                     );
                     localStorage.setItem(
                         "message",
                         JSON.stringify({
                             type: "assistant_response",
                             content: response,
+          					id: messageData.id, 
                             targetTab: messageData.senderTab,
                         })
                     );
