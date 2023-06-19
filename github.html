@@ -142,13 +142,13 @@ chatbox.addEventListener('mouseup', handleTextSelection);
    });
       };
 async function send_message() {
-  var input = $("user_input").value.replace(/^\/source\/$/gm, "```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
+  var input = $("user_input").value.replace(/^\/source\/$/gm, "```html\n" + editor.getValue() + "\n```");
   $("user_input").value = "";
 
   // Add the user message to the chat log
-  messages.push({ id: messageId, role: "user", content: input });
-  process_message("user", "<b>You:</b> " + converter.makeHtml(input), messageId);
-  messageId++;
+    const id = generateUUID();
+  messages.push({ id, role: "user", content: input });
+  process_message("user", "<b>You:</b> " + converter.makeHtml(input), id);
 
     // Add a holding message
     var holding_message = add_holding_message();
@@ -156,16 +156,21 @@ async function send_message() {
     holdingMessages.push(holding_message);
   // Check if the message starts with @name
   const nameMatch = input.match(/^@(\w+)/);
-  if (nameMatch && spawnedTabs[nameMatch[1]]) {
+  if (nameMatch) {
     const tabName = nameMatch[1];
     input = input.replace(`@${tabName}`, "").trim();
-    spawnedTabs[tabName].postMessage({ type: "user_message", content: input }, "*");
+    localStorage.setItem("message",
+      JSON.stringify({
+        type: "user_message",
+        content: input,
+        targetTab: tabName,
+        senderTab: getTabName()
+      })
+    );
   } else {
-
-
-      messageQueue.push(input);
-      process_message_queue();
-    }
+    messageQueue.push(input);
+    process_message_queue();
+  }
   chatbox.scrollTop = chatbox.scrollHeight;
 }
 
@@ -196,25 +201,26 @@ async function send_message() {
    }
 
 function add_holding_message() {
-    var chatbox = $("chatbox");
-    var holding_message = document.createElement("p");
-    holding_message.className = "message assistant-message";
-    holding_message.innerHTML = "<b>Assistant:</b> <span class='timer'>0</span> seconds <button class='regenerate-button' style='background-color: red;' disabled>Regenerate</button>";
-    chatbox.appendChild(holding_message);
-    let timer = 0;
-    const timerInterval = setInterval(() => {
-        timer += 1;
-        holding_message.querySelector(".timer").textContent = timer;
-    }, 1000);
-    holding_message.setAttribute("data-id", messageId);
-    messages.push({ id: messageId, role: "assistant", content: "" });
-    messageId++; // increment the messageId here
-    return { holding_message, timerInterval };
+  var chatbox = $("chatbox");
+  var holding_message = document.createElement("p");
+  holding_message.className = "message assistant-message";
+  holding_message.innerHTML = "<b>Assistant:</b> <span class='timer'>0</span> seconds <button class='regenerate-button' style='background-color: red;' disabled>Regenerate</button>";
+  const uuid = generateUUID();
+  holding_message.setAttribute("data-id", uuid);
+  chatbox.appendChild(holding_message);
+  let timer = 0;
+  const timerInterval = setInterval(() => {
+    timer += 1;
+    holding_message.querySelector(".timer").textContent = timer;
+  }, 1000);
+  holdingMessages.push({ holding_message, timerInterval, uuid });
+  return { holding_message, timerInterval, uuid };
 }
 
 
+
 function remove_holding_message(holding_message_data, new_message) {
-  process_message("assistant", converter.makeHtml(new_message), holding_message_data.holding_message.dataset.id, holding_message_data.holding_message, false);
+  process_message("assistant", converter.makeHtml(new_message), holding_message_data.uuid, holding_message_data.holding_message, false);
   clearInterval(holding_message_data.timerInterval);
 }
 function get_messages_from_dom(id) {
@@ -243,35 +249,32 @@ function get_messages_from_dom(id) {
        var panel = $(panel_id);
        panel.classList.toggle("hidden");
       }
-async function commit_content() {
+async function commit({ message, file, content }) {
   const token = $("token").value;
   const repo_info = $("repo").value.split("/");
-  const content = editor.getValue();
   if (repo_info.length < 2 || repo_info.length > 3) {
-    alert(
-      "Invalid format. Please use 'organization/reponame' or 'organization/reponame/filename'."
-    );
+    alert("Invalid format. Please use 'organization/reponame' or 'organization/reponame/filename'.");
     return;
   }
   const firstUserMessage = messages.find((message) => message.role === "user");
-  let commitMessage = firstUserMessage
+  message ||= firstUserMessage
     ? removeOuterCodeBlocks(firstUserMessage.content)
-    : "Update index.html";
-  commitMessage = commitMessage.replace(/```[\s\S]*?```/g, "").trim();
+    : "Update " + file;
+  message = message.replace(/```[\s\S]*?```/g, "").trim();
   const octokit = new Octokit({ auth: token });
   const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
   const my_octokit = new MyOctokit({ auth: token });
-  const filePath = repo_info[2] ? repo_info[2] : "index.html";
+
   try {
     const { updated, data } = await my_octokit.createOrUpdateTextFile({
       owner: repo_info[0],
       repo: repo_info[1],
-      path: filePath,
-      content: content,
-      message: commitMessage,
+      path: file,
+      content,
+      message,
     });
     if (updated) {
-      alert(`Successfully committed the content to ${filePath}`);
+      alert(`Successfully committed the content to ${file}`);
     } else {
       alert("Failed to commit the content.");
     }
@@ -280,7 +283,15 @@ async function commit_content() {
     alert("Error committing the content. Please check the console for more details.");
   }
 }
-      function format_content() {
+async function commit_content() {
+  const token = $("token").value;
+  const repo_info = $("repo").value.split("/");
+  const content = editor.getValue();
+  const file = repo_info[2] ? repo_info[2] : "index.html";
+  
+  commit({content, file})
+}
+function format_content() {
        const html_code = editor.getValue();
        const formatted_code = prettier.format(html_code, {
         parser: "html",
@@ -301,7 +312,7 @@ async function commit_content() {
           const tabName = prompt("Enter a name for the spawned tab:");
           if (tabName) {
             const blob = new Blob([content], { type: "text/html" });
-            const url = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob) + "#" + tabName;
             spawnedTabs[tabName] = window.open(url, "_blank");
           }
           break;
@@ -341,7 +352,7 @@ async function commit_content() {
       }
       editor.addEventListener("input", update_token_count);
       function update_token_count() {
-       const content = editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "");
+       const content = editor.getValue()
        const encoded = GPTTokenizer_cl100k_base.encode(content);
        const token_count = encoded.length;
        $("token_count").textContent = `Tokens: ${token_count}`;
@@ -419,17 +430,17 @@ async function commit_content() {
        const holdingMessage = holdingMessages[0];
        holdingMessage.holding_message.innerHTML = "<b>Assistant:</b> " + message;
    }
-async function regenerate_message(id) {
-    const messages_before = get_messages_from_dom(id)
-    const message_node = find_message_node(id);
-    const holding_message_data = add_holding_message();
-    message_node.replaceWith(holding_message_data.holding_message);
-    const data = await callOpenAI(messages_before);
-    if (data["choices"]) {
-        const new_message = data["choices"][0]["message"]["content"];
-        remove_holding_message(holding_message_data, new_message);
-        holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + id + ")'>Regenerate</button>";
-    }
+async function regenerate_message(uuid) {
+  const messages_before = get_messages_from_dom(uuid);
+  const message_node = find_message_node(uuid);
+  const holding_message_data = add_holding_message();
+  message_node.replaceWith(holding_message_data.holding_message);
+  const data = await callOpenAI(messages_before);
+  if (data["choices"]) {
+    const new_message = data["choices"][0]["message"]["content"];
+    remove_holding_message(holding_message_data, new_message);
+    holding_message_data.holding_message.innerHTML = "<b>Assistant:</b> " + converter.makeHtml(new_message) + " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" + uuid + ")'>Regenerate</button>";
+  }
 }
 function handleTextSelection() {
   var selectedText = window.getSelection().toString();
@@ -442,17 +453,16 @@ function handleTextSelection() {
     }
   }
 }
-    function sanitizeInput(input) {
+function sanitizeInput(input) {
   input = input.replace(/^\/source\/$/gm, "```html\n" + editor.getValue().replace(/^\s+|\s+$/gm, "").replace(/\n/g, "") + "\n```");
   return converter.makeHtml(input);
 }
     
-function process_message(role, content, messageId, replaceNode = null, incrementId = true) {
+function process_message(role, content, uuid, replaceNode = null, incrementId = true) {
   const chatbox = document.getElementById("chatbox");
   const message = document.createElement("p");
   message.setAttribute("contenteditable", "true");
-  message.setAttribute("data-id", messageId);
-
+  message.setAttribute("data-id", uuid);
   if (role === "user") {
     message.className = "message user-message";
     message.innerHTML = "<b>You:</b> " + content;
@@ -463,22 +473,15 @@ function process_message(role, content, messageId, replaceNode = null, increment
     message.className = "message system-message";
     message.innerHTML = "<b>System:</b> " + content;
   }
-
   message.addEventListener("input", () => {
-    messages.find((m) => m.id === messageId).content = sanitizeInput(message.textContent);
+    messages.find((m) => m.id === uuid).content = sanitizeInput(message.textContent);
   });
-
   if (replaceNode) {
-    chatbox.replaceChild(message, replaceNode);
+    replaceNode.replaceWith(message);
   } else {
     chatbox.appendChild(message);
   }
-
-  messages.push({ id: messageId, role: role, content: content });
-
-  if (incrementId) {
-    messageId++;
-  }
+  messages.push({ id: uuid, role, content });
 }
 function removeOuterCodeBlocks(input) {
   const firstBackticksIndex = input.indexOf("```");
@@ -490,27 +493,48 @@ function removeOuterCodeBlocks(input) {
 
   return input;
 }
-window.addEventListener("message", async (event) => {
-  const data = event.data;
-  if (event.source === window.opener) {
-    if (data.type === "user_message") {
-      handle_incoming_message(event);
-    }
-  } else {
-    if (data.type === "assistant_response") {
-      process_message("assistant", converter.makeHtml(data.content), messageId);
+window.addEventListener("storage", async (event) => {
+  if (event.key === "message") {
+    const messageData = JSON.parse(event.newValue);
+    if (messageData.targetTab === getTabName()) {
+      if (messageData.type === "user_message") {
+        handle_incoming_message(messageData);
+      } else if (messageData.type === "assistant_response") {
+        const holding_message_data = holdingMessages.shift();
+        remove_holding_message(holding_message_data, messageData.content);
+      }
     }
   }
 });
-function handle_incoming_message(event) {
-  const data = event.data;
-  if (data.type === "user_message") {
-    process_message("user", "<b>User:</b> " + converter.makeHtml(data.content), messageId);
-    // Perform the operation and send the response back
+function handle_incoming_message(messageData) {
+  if (messageData.type === "user_message") {
+    process_message("user", "<b>User:</b> " + converter.makeHtml(messageData.content), messageId);
     const response = "Response from spawned tab";
     process_message("assistant", "<b>Assistant:</b> " + converter.makeHtml(response), messageId);
-    event.source.postMessage({ type: "assistant_response", content: response }, "*");
+    localStorage.setItem("message",
+      JSON.stringify({
+        type: "assistant_response",
+        content: response,
+        targetTab: messageData.senderTab
+      })
+    );
   }
+}
+    
+let opener = false;
+(function checkOpener(){
+   opener ||= window.opener
+   opener && !window.opener ? window.close() : requestIdleCallback(checkOpener)
+})()
+function getTabName() {
+  return window.location.hash.substring(1);
+}
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0,
+        v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 </script>
  
