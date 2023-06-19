@@ -1,1 +1,736 @@
-undefined
+<html><head>
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
+        <script src="https://unpkg.com/gpt-tokenizer"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/codemirror.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/mode/xml/xml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/addon/runmode/runmode.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.4/theme/monokai.min.css" rel="stylesheet">
+
+        <script src="https://unpkg.com/prettier@latest/standalone.js"></script>
+        <script src="https://unpkg.com/prettier@latest/parser-html.js"></script>
+        <style>
+            .user-message {
+                background-color: lightgreen;
+            }
+            #editor > div {
+                height: auto;
+            }
+            .cm-s-monokai .CodeMirror-linenumber {
+                color: rgba(147, 161, 161, 0.8);
+            }
+            .assistant-message {
+                background-color: lightblue;
+            }
+            .system-message {
+                background-color: orange;
+            }
+            .token-count {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                background-color: rgba(0, 0, 0, 0.7);
+                color: white;
+                padding: 2px 4px;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+        </style>
+        <script type="module">
+            import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
+            import { createOrUpdateTextFile } from "https://cdn.skypack.dev/@octokit/plugin-create-or-update-text-file";
+            window.Octokit = Octokit;
+            window.createOrUpdateTextFile = createOrUpdateTextFile;
+        </script>
+    </head>
+    <body class="flex">
+        <div class="w-1/2 flex flex-col h-screen box-border p-4">
+            <div id="chatbox" class="h-[calc(100vh-50vh)] w-full flex-grow border mb-4 rounded p-2 box-border overflow-auto">
+                <div contenteditable="true"></div>
+            </div>
+            <textarea id="user_input" placeholder="Type your message here" class="w-full h-24 p-2 mb-4 border rounded box-border"></textarea>
+            <div class="flex flex-col space-y-4">
+                <button onclick="send_message()" class="px-4 py-2 border rounded bg-blue-500 text-white">
+                    Send Message
+                </button>
+                <button onclick="toggle_panel('config-panel');" class="px-4 py-2 border rounded bg-gray-400 text-white">
+                    Toggle Configuration Panel
+                </button>
+            </div>
+            <div id="config-panel" class="hidden flex flex-col space-y-4 mt-4">
+                <label for="apikey">OpenAI API Key:</label>
+                <input id="apikey" type="password" placeholder="Enter your OpenAI API Key here" class="w-full p-2 border rounded">
+                <label for="num_responses">Number of Responses:</label>
+                <input id="num_responses" type="number" value="1" min="1" max="5" class="w-full p-2 border rounded" onchange="set('num_responses')">
+                <label for="model">Model:</label>
+                <select id="model" class="w-full p-2 border rounded" onchange="set('model')"></select>
+                <label for="max_tokens">Max Tokens:</label>
+                <input id="max_tokens" onchange="set('max_tokens')" type="number" value="4000" class="w-full p-2 border rounded">
+                <label for="temperature">Temperature:</label>
+                <input id="temperature" type="number" step="0.1" value="1" min="0" max="2" class="w-full p-2 border rounded" onchange="set('max_tokens')">
+                <label for="top_p">Top-p:</label>
+                <input id="top_p" type="number" value="1" step="0.1" min="0" max="1" class="w-full p-2 border rounded" onchange="set('top_p')">
+                <label for="presence_penalty">Presence Penalty:</label>
+                <input id="presence_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
+                <label for="frequency_penalty">Frequency Penalty:</label>
+                <input id="frequency_penalty" type="number" value="0" step="0.1" min="-2" max="2" class="w-full p-2 border rounded">
+                <label for="token">Personal Access Token:</label>
+                <input id="token" type="password" placeholder="Enter your personal access token here" class="w-full p-2 border rounded mb-2">
+                <label for="repo">Organization/Repo Name:</label>
+                <input id="repo" type="text" placeholder="Enter organization/repo name here" class="w-full p-2 border rounded mb-4">
+            </div>
+        </div>
+        <div class="w-1/2 flex flex-col h-screen p-4 box-border">
+            <h2 class="text-lg font-bold mb-4">Source Code Editor</h2>
+            <span id="token_count" class="token-count"></span>
+            <div id="editor" contenteditable="true" class="w-full flex-grow border rounded p-2 whitespace-pre-wrap overflow-auto font-mono mb-4"></div>
+            <div class="flex space-x-2">
+                <button onclick="handle_content('spawn')" class="px-4 py-2 border rounded mr-2 bg-blue-500 text-white">
+                    Spawn
+                </button>
+                <button onclick="handle_content('copy')" class="px-4 py-2 border rounded bg-green-500 text-white">
+                    Copy
+                </button>
+                <button onclick="handle_content('commit')" class="px-4 py-2 border rounded bg-yellow-500 text-white">
+                    Commit
+                </button>
+                <button onclick="handle_content('refresh')" class="px-4 py-2 border rounded bg-purple-500 text-white">
+                    Refresh
+                </button>
+                <button onclick="format_content()" class="px-4 py-2 border rounded bg-green-500 text-white ml-2">
+                    Format
+                </button>
+            </div>
+        </div>
+        <script>
+            const spawnedTabs = {};
+            var messageId = 0;
+            var messages = [];
+            var messageQueue = [];
+            var converter = new showdown.Converter();
+            var holdingMessages = [];
+            var $ = document.getElementById.bind(document);
+            function add_system_message(content) {
+                process_message(
+                    "system",
+                    converter.makeHtml(content),
+                    messageId
+                );
+            }
+            window.onload = async function () {
+                load();
+                initialHTML = document.documentElement.outerHTML;
+                const models = await fetch_models();
+                const modelSelect = $("model");
+                modelSelect.innerHTML = "";
+                var chatbox = $("chatbox");
+                chatbox.addEventListener("mouseup", handleTextSelection);
+                models.forEach((model) => {
+                    const option = document.createElement("option");
+                    option.value = model.id;
+                    option.textContent = model.id;
+                    modelSelect.appendChild(option);
+                });
+
+                document.querySelectorAll("input, select").forEach((input) => {
+                    input.addEventListener("change", () => {
+                        localStorage.setItem(input.id, input.value);
+                    });
+                });
+                add_system_message(
+                    `You are an expert web developer with an IQ of 120.
+      The user will send you the code of the interface you are interacting through, followed by a feature request or bug report.
+      You will respond with clear, concise instructions for how to change the code to fix the bug or implement the feature including complete function code with no omissions.
+      You will put each function definition within a dedicated markdown code block for easier parsing.
+	  You will not include any disclaimers, warnings, or unnecessary elaboration, as it will make things harder to work with.
+      RESPOND WITH MARKDOWN`
+                );
+                editor = CodeMirror(document.getElementById("editor"), {
+                    mode: "xml",
+                    theme: "default",
+                    lineNumbers: true,
+                    value: initialHTML,
+                    viewportMargin: Infinity,
+                    height: "100%",
+                });
+                update_token_count();
+                [
+                    "model",
+                    "max_tokens",
+                    "temperature",
+                    "top_p",
+                    "presence_penalty",
+                    "frequency_penalty",
+                ].forEach((id) => {
+                    const value = localStorage.getItem(id);
+                    if (value) {
+                        $(id).value = value;
+                    }
+                });
+            };
+            async function send_message() {
+                var input = $("user_input").value.replace(
+                    /^\/source\/$/gm,
+                    "```html\n" + editor.getValue() + "\n```"
+                );
+                $("user_input").value = "";
+
+                // Add the user message to the chat log
+                const id = generateUUID();
+                const message = { id, role: "user", content: input };
+                messages.push(message);
+                process_message(
+                    "user",
+                    "<b>You:</b> " + converter.makeHtml(input),
+                    id
+                );
+
+                // Add a holding message
+                var holding_message = add_holding_message(id);
+                $("chatbox").appendChild(holding_message.holding_message);
+                holdingMessages.push(holding_message);
+                // Check if the message starts with @name
+                const nameMatch = input.match(/^@(\w+)/);
+                if (nameMatch) {
+                    const tabName = nameMatch[1];
+                    input = input.replace(`@${tabName}`, "").trim();
+                    const queryParams = new URLSearchParams(
+                        input.split("?")[1]
+                    );
+                    const params = Object.fromEntries(queryParams.entries());
+                    localStorage.setItem(
+                        "message",
+                        JSON.stringify({
+                            type: "user_message",
+          					id,
+                            content: input,
+                            targetTab: tabName,
+                            senderTab: getTabName(),
+                            params,
+                        })
+                    );
+                } else {
+                    messageQueue.push(message);
+                    process_message_queue();
+                }
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }
+            async function process_message_queue() {
+                if (messageQueue.length === 0) return;
+                var { id, content: input } = messageQueue[0];
+                var num_responses = parseInt($("num_responses").value);
+
+                document
+                    .querySelectorAll("button.ml-2")
+                    .forEach((button) => (button.disabled = true));
+
+                var data = await callOpenAI(get_messages_from_dom());
+
+                if (data["choices"]) {
+                    data["choices"].forEach((choice, index) => {
+                        if (choice["message"]) {
+                            var message = choice["message"]["content"];
+                            messages.push({
+                                role: "assistant",
+                                content: message,
+                            });
+
+                            var holding_message = holdingMessages.find(
+                                (h) => h.user_message_id == id
+                            );
+                            remove_holding_message(holding_message, message);
+                            chatbox.scrollTop = chatbox.scrollHeight;
+                        }
+                    });
+                    document
+                        .querySelectorAll("button.ml-2")
+                        .forEach((button) => (button.disabled = false));
+
+                    messageQueue.shift();
+                    process_message_queue();
+                }
+            }
+
+            function add_holding_message(user_message_id) {
+                var chatbox = $("chatbox");
+                var holding_message = document.createElement("p");
+                holding_message.className = "message assistant-message";
+                holding_message.innerHTML =
+                    "<b>Assistant:</b> <span class='timer'>0</span> seconds <button class='regenerate-button' style='background-color: red;' disabled>Regenerate</button>";
+                const uuid = generateUUID();
+                holding_message.setAttribute("data-id", uuid);
+                chatbox.appendChild(holding_message);
+                let timer = 0;
+                const timerInterval = setInterval(() => {
+                    timer += 1;
+                    holding_message.querySelector(".timer").textContent = timer;
+                }, 1000);
+                holdingMessages.push({
+                    holding_message,
+                    timerInterval,
+                    uuid,
+                    user_message_id,
+                });
+                return { holding_message, timerInterval, uuid };
+            }
+
+            function remove_holding_message(holding_message_data, new_message) {
+                process_message(
+                    "assistant",
+                    converter.makeHtml(new_message),
+                    holding_message_data.uuid,
+                    holding_message_data.holding_message,
+                    false
+                );
+                clearInterval(holding_message_data.timerInterval);
+            }
+            function get_messages_from_dom(id) {
+                const chatbox = $("chatbox");
+                const message_elements = chatbox.querySelectorAll("p.message");
+                const messages_from_dom = [];
+
+                let index = 0;
+                for (const message of message_elements) {
+                    index++;
+                    const role = message.classList.contains("user-message")
+                        ? "user"
+                        : message.classList.contains("assistant-message")
+                        ? "assistant"
+                        : "system";
+                    if (
+                        role == "assistant" &&
+                        message.getAttribute("data-id") == id
+                    ) {
+                        break;
+                    }
+                    // Exclude the last assistant message, which is the holding message
+                    if (
+                        !(
+                            role === "assistant" &&
+                            index === message_elements.length - 1
+                        )
+                    ) {
+                        const content = message.textContent;
+                        messages_from_dom.push({ role, content });
+                    }
+                }
+
+                return messages_from_dom;
+            }
+
+            function toggle_panel(panel_id) {
+                var panel = $(panel_id);
+                panel.classList.toggle("hidden");
+            }
+            async function commit({ message, file, content }) {
+                const token = $("token").value;
+                const repo_info = $("repo").value.split("/");
+                if (repo_info.length < 2 || repo_info.length > 3) {
+                    alert(
+                        "Invalid format. Please use 'organization/reponame' or 'organization/reponame/filename'."
+                    );
+                    return;
+                }
+                const firstUserMessage = messages.find(
+                    (message) => message.role === "user"
+                );
+                message ||= firstUserMessage
+                    ? removeOuterCodeBlocks(firstUserMessage.content)
+                    : "Update " + file;
+                message = message.replace(/```[\s\S]*?```/g, "").trim();
+                const octokit = new Octokit({ auth: token });
+                const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
+                const my_octokit = new MyOctokit({ auth: token });
+
+                try {
+                    const { updated, data } =
+                        await my_octokit.createOrUpdateTextFile({
+                            owner: repo_info[0],
+                            repo: repo_info[1],
+                            path: file,
+                            content,
+                            message,
+                        });
+                    if (updated) {
+                        alert(`Successfully committed the content to ${file}`);
+                    } else {
+                        alert("Failed to commit the content.");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert(
+                        "Error committing the content. Please check the console for more details."
+                    );
+                }
+            }
+            async function commit_content() {
+                const token = $("token").value;
+                const repo_info = $("repo").value.split("/");
+                const content = editor.getValue();
+                const file = repo_info[2] ? repo_info[2] : "index.html";
+
+                commit({ content, file });
+            }
+            function format_content() {
+                const html_code = editor.getValue();
+                const formatted_code = prettier.format(html_code, {
+                    parser: "html",
+                    plugins: prettierPlugins,
+                    printWidth: 500,
+                    tabWidth: 1,
+                    htmlWhitespaceSensitivity: "ignore",
+                });
+                editor.setValue(formatted_code);
+            }
+            function refresh_content() {
+                editor.setValue(initialHTML);
+            }
+            async function handle_content(action) {
+                const content = editor.getValue();
+                switch (action) {
+                    case "spawn":
+                        const tabName = prompt(
+                            "Enter a name for the spawned tab:"
+                        );
+                        if (tabName) {
+                            const blob = new Blob([content], {
+                                type: "text/html",
+                            });
+                            const url =
+                                URL.createObjectURL(blob) + "#" + tabName;
+                            spawnedTabs[tabName] = window.open(url, "_blank");
+                        }
+                        break;
+                    case "copy":
+                        const range = document.createRange();
+                        range.selectNodeContents(editor);
+                        window.getSelection().removeAllRanges();
+                        window.getSelection().addRange(range);
+                        document.execCommand("copy");
+                        window.getSelection().removeAllRanges();
+                        break;
+                    case "commit":
+                        commit_content();
+                        break;
+                    case "refresh":
+                        editor.setValue(initialHTML);
+                        break;
+                }
+            }
+            function scroll_to_highlighted_text() {
+                const chatbox = $("chatbox");
+                const editor = $("editor");
+                const highlighted_text = window.getSelection().toString();
+                if (highlighted_text) {
+                    const editor_content = editor.getValue();
+                    const index = editor_content.indexOf(highlighted_text);
+                    if (index !== -1) {
+                        const range = document.createRange();
+                        range.setStart(editor.firstChild, index);
+                        range.setEnd(
+                            editor.firstChild,
+                            index + highlighted_text.length
+                        );
+                        const rect = range.getBoundingClientRect();
+                        const editor_rect = editor.getBoundingClientRect();
+                        const scrollTopPos =
+                            rect.top - editor_rect.top + editor.scrollTop;
+                        editor.scrollTop = scrollTopPos;
+                    }
+                }
+            }
+            editor.addEventListener("input", update_token_count);
+            function update_token_count() {
+                const content = editor.getValue();
+                const encoded = GPTTokenizer_cl100k_base.encode(content);
+                const token_count = encoded.length;
+                $("token_count").textContent = `Tokens: ${token_count}`;
+            }
+
+            async function fetch_models() {
+                const api_key = $("apikey").value;
+                const response = await fetch(
+                    "https://api.openai.com/v1/models",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: "Bearer " + api_key,
+                        },
+                    }
+                );
+                const data = await response.json();
+                return data.data;
+            }
+
+            async function callOpenAI(messages) {
+                const {
+                    apikey,
+                    model,
+                    max_tokens,
+                    temperature,
+                    top_p,
+                    presence_penalty,
+                    frequency_penalty,
+                } = load();
+                let retryCount = 0;
+                while (true) {
+                    try {
+                        const response = await fetch(
+                            "https://api.openai.com/v1/chat/completions",
+                            {
+                                method: "POST",
+                                headers: {
+                                    Authorization: "Bearer " + apikey,
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                    model: model,
+                                    messages: messages,
+                                    max_tokens: max_tokens,
+                                    temperature: temperature,
+                                    top_p: top_p,
+                                    presence_penalty: presence_penalty,
+                                    frequency_penalty: frequency_penalty,
+                                }),
+                            }
+                        );
+                        if (!response.ok) {
+                            if (
+                                [500, 502, 429].includes(response.status) &&
+                                retryCount < 3
+                            ) {
+                                retryCount++;
+                                updateHoldingMessage(
+                                    `Error ${response.status}. Retry ${retryCount} in 5 seconds...`
+                                );
+                                await new Promise((resolve) =>
+                                    setTimeout(resolve, 5000)
+                                );
+                                continue;
+                            }
+                            throw new Error(
+                                `API call failed with status ${response.status}`
+                            );
+                        }
+                        return await response.json();
+                    } catch (error) {
+                        updateHoldingMessage(error.message);
+                        break;
+                    }
+                }
+            }
+            function get(id) {
+                const value = localStorage.getItem(id);
+                if (value) {
+                    $(id).value = value;
+                }
+                return isNaN(parseFloat(value)) ? value : parseFloat(value);
+            }
+            function load() {
+                const localStorageKeys = [
+                    "apikey",
+                    "token",
+                    "repo",
+                    "model",
+                    "max_tokens",
+                    "temperature",
+                    "top_p",
+                    "presence_penalty",
+                    "frequency_penalty",
+                ];
+                return localStorageKeys.reduce(
+                    (o, k) => ({ ...o, [k]: get(k) }),
+                    {}
+                );
+            }
+            function set(id) {
+                localStorage.setItem(id, $(id).value);
+            }
+            function find_message_node(id) {
+                return document.querySelector(`[data-id='${id}']`);
+            }
+
+            function updateHoldingMessage(message) {
+                const holdingMessage = holdingMessages[0];
+                holdingMessage.holding_message.innerHTML =
+                    "<b>Assistant:</b> " + message;
+            }
+            async function regenerate_message(uuid) {
+                const messages_before = get_messages_from_dom(uuid);
+                const message_node = find_message_node(uuid);
+                const holding_message_data = add_holding_message();
+                message_node.replaceWith(holding_message_data.holding_message);
+                const data = await callOpenAI(messages_before);
+                if (data["choices"]) {
+                    const new_message =
+                        data["choices"][0]["message"]["content"];
+                    remove_holding_message(holding_message_data, new_message);
+                    holding_message_data.holding_message.innerHTML =
+                        "<b>Assistant:</b> " +
+                        converter.makeHtml(new_message) +
+                        " <button class='regenerate-button' style='background-color: red;' onclick='regenerate_message(" +
+                        uuid +
+                        ")'>Regenerate</button>";
+                }
+            }
+            function handleTextSelection() {
+                var selectedText = window.getSelection().toString();
+                if (selectedText) {
+                    var editorContent = editor.getValue();
+                    var index = editorContent.indexOf(selectedText);
+                    if (index !== -1) {
+                        editor.setSelection(
+                            editor.posFromIndex(index),
+                            editor.posFromIndex(index + selectedText.length)
+                        );
+                        editor.scrollIntoView(
+                            {
+                                line: editor.posFromIndex(index).line,
+                                ch: editor.posFromIndex(index).ch,
+                            },
+                            200
+                        );
+                    }
+                }
+            }
+            function sanitizeInput(input) {
+                input = input.replace(
+                    /^\/source\/$/gm,
+                    "```html\n" +
+                        editor
+                            .getValue()
+                            .replace(/^\s+|\s+$/gm, "")
+                            .replace(/\n/g, "") +
+                        "\n```"
+                );
+                return converter.makeHtml(input);
+            }
+
+            function process_message(
+                role,
+                content,
+                uuid,
+                replaceNode = null,
+                incrementId = true
+            ) {
+                const chatbox = document.getElementById("chatbox");
+                const message = document.createElement("p");
+                message.setAttribute("contenteditable", "true");
+                message.setAttribute("data-id", uuid);
+                if (role === "user") {
+                    message.className = "message user-message";
+                    message.innerHTML = "<b>You:</b> " + content;
+                } else if (role === "assistant") {
+                    message.className = "message assistant-message";
+                    message.innerHTML = "<b>Assistant:</b> " + content;
+                } else if (role === "system") {
+                    message.className = "message system-message";
+                    message.innerHTML = "<b>System:</b> " + content;
+                }
+                message.addEventListener("input", () => {
+                    messages.find((m) => m.id === uuid).content = sanitizeInput(
+                        message.textContent
+                    );
+                });
+                if (replaceNode) {
+                    replaceNode.replaceWith(message);
+                } else {
+                    chatbox.appendChild(message);
+                }
+                messages.push({ id: uuid, role, content });
+            }
+            function removeOuterCodeBlocks(input) {
+                const firstBackticksIndex = input.indexOf("```");
+                const lastBackticksIndex = input.lastIndexOf("```");
+
+                if (
+                    firstBackticksIndex !== -1 &&
+                    lastBackticksIndex !== -1 &&
+                    firstBackticksIndex !== lastBackticksIndex
+                ) {
+                    return (
+                        input.slice(0, firstBackticksIndex) +
+                        input.slice(lastBackticksIndex + 3)
+                    );
+                }
+
+                return input;
+            }
+            window.addEventListener("storage", async (event) => {
+                if (event.key === "message") {
+                    const messageData = JSON.parse(event.newValue);
+                    if (messageData.targetTab === getTabName()) {
+                        if (messageData.type === "user_message") {
+                            handle_incoming_message(messageData);
+                        } else if (messageData.type === "assistant_response") {
+                            const holding_message_data = holdingMessages.find(
+                                (h) => h.user_message_id === messageData.id
+                            );
+                            remove_holding_message(
+                                holding_message_data,
+                                messageData.content
+                            );
+                        }
+                    }
+                }
+            });
+            async function handle_incoming_message(messageData) {
+                if (messageData.type === "user_message") {
+                    process_message(
+                        "user",
+                        "<b>User:</b> " +
+                            converter.makeHtml(messageData.content),
+                        messageData.id
+                    );
+                    let response = "Response from spawned tab";
+                    if (messageData.content.startsWith("javascript:")) {
+                        try {
+                            const script = messageData.content.slice("javascript:".length);
+                            const result = await eval(script);
+                            response = `Result: ${result}`;
+                        } catch (error) {
+                            response = `Error: ${error.message}`;
+                        }
+                    }
+                    process_message(
+                        "assistant",
+                        "<b>Assistant:</b> " + converter.makeHtml(response),
+                        messageData.id
+                    );
+                    localStorage.setItem(
+                        "message",
+                        JSON.stringify({
+                            type: "assistant_response",
+                            content: response,
+          					id: messageData.id, 
+                            targetTab: messageData.senderTab,
+                        })
+                    );
+                }
+            }
+
+            let opener = false;
+            (function checkOpener() {
+                opener ||= window.opener;
+                opener && !window.opener
+                    ? window.close()
+                    : requestIdleCallback(checkOpener);
+            })();
+            function getTabName() {
+                return window.location.hash.substring(1);
+            }
+            function generateUUID() {
+                return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+                    /[xy]/g,
+                    function (c) {
+                        var r = (Math.random() * 16) | 0,
+                            v = c === "x" ? r : (r & 0x3) | 0x8;
+                        return v.toString(16);
+                    }
+                );
+            }
+        </script>
+    
+
+</body></html>
