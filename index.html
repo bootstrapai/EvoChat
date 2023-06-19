@@ -477,7 +477,7 @@ function process_message(role, content, uuid, replaceNode = null, incrementId = 
     messages.find((m) => m.uuid === uuid).content = sanitizeInput(message.textContent);
   });
   if (replaceNode) {
-    chatbox.replaceChild(message, replaceNode);
+    replaceNode.replaceWith(message);
   } else {
     chatbox.appendChild(message);
   }
