@@ -688,16 +688,7 @@
                             converter.makeHtml(messageData.content),
                         messageData.id
                     );
-                    let response = "Response from spawned tab";
-                    if (messageData.content.startsWith("javascript:")) {
-                        try {
-                            const script = messageData.content.slice("javascript:".length);
-                            const result = await eval(script);
-                            response = `Result: ${result}`;
-                        } catch (error) {
-                            response = `Error: ${error.message}`;
-                        }
-                    }
+                    let response = handleMessageContent(messageData.content);
                     process_message(
                         "assistant",
                         "<b>Assistant:</b> " + converter.makeHtml(response),
