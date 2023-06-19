@@ -175,7 +175,11 @@
                     "```html\n" + editor.getValue() + "\n```"
                 );
                 $("user_input").value = "";
+   const response = await handleMessageContent(input);
 
+    if (input.startsWith("javascript:")) {
+        process_message("assistant", converter.makeHtml(response), generateUUID());
+    } else {
                 // Add the user message to the chat log
                 const id = generateUUID();
                 const message = { id, role: "user", content: input };
@@ -214,6 +218,7 @@
                     messageQueue.push(message);
                     process_message_queue();
                 }
+          }
                 chatbox.scrollTop = chatbox.scrollHeight;
             }
             async function process_message_queue() {
@@ -675,7 +680,7 @@
                     }
                 }
             });
-            function handle_incoming_message(messageData) {
+            async function handle_incoming_message(messageData) {
                 if (messageData.type === "user_message") {
                     process_message(
                         "user",
@@ -683,7 +688,7 @@
                             converter.makeHtml(messageData.content),
                         messageData.id
                     );
-                    const response = "Response from spawned tab";
+                    let response = handleMessageContent(messageData.content);
                     process_message(
                         "assistant",
                         "<b>Assistant:</b> " + converter.makeHtml(response),
@@ -721,6 +726,21 @@
                     }
                 );
             }
+          async function handleMessageContent(content) {
+    let response = "";
+    if (content.startsWith("javascript:")) {
+        try {
+            const script = content.slice("javascript:".length);
+            const result = await eval(script);
+            response = `Result: ${result}`;
+        } catch (error) {
+            response = `Error: ${error.message}`;
+        }
+    } else {
+        response = content;
+    }
+    return response;
+}
         </script>
     
 
