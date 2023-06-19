@@ -169,12 +169,15 @@
                     }
                 });
             };
-            async function send_message() {
-                var input = $("user_input").value.replace(
-                    /^\/source\/$/gm,
-                    "```html\n" + editor.getValue() + "\n```"
-                );
-                $("user_input").value = "";
+async function send_message(input) {
+  if (!input) {
+    input = $("user_input").value.replace(
+      /^\/source\/$/gm,
+      "```html\n" + editor.getValue() + "\n```"
+    );
+    $("user_input").value = "";
+  }
+
    const response = await handleMessageContent(input);
 
     if (input.startsWith("javascript:")) {
