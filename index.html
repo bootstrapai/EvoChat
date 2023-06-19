@@ -182,7 +182,7 @@
                 messages.push(message);
                 process_message(
                     "user",
-                    "<b>You:</b> " + converter.makeHtml(input),
+                    converter.makeHtml(input),
                     id
                 );
 
@@ -196,14 +196,14 @@
                     const tabName = nameMatch[1];
                     input = input.replace(`@${tabName}`, "").trim();
                     const queryParams = new URLSearchParams(
-                        input.split("?")[1]
+                        input.split('\n')[0].split("?")[1]
                     );
                     const params = Object.fromEntries(queryParams.entries());
                     localStorage.setItem(
                         "message",
                         JSON.stringify({
                             type: "user_message",
-                            content: input,
+                            content: input.split('\n').slice(1).join('\n'),
                             targetTab: tabName,
                             senderTab: getTabName(),
                             params,
