@@ -181,11 +181,12 @@ async function send_message(input) {
    const response = await handleMessageContent(input);
 
     if (input.startsWith("javascript:")) {
-        send_message(response);
+        return send_message(response);
     } else {
                 // Add the user message to the chat log
                 const id = generateUUID();
                 const message = { id, role: "user", content: input };
+                message.promise = new Promise(r => message.resolve = r);
                 messages.push(message);
                 process_message(
                     "user",
@@ -221,12 +222,14 @@ async function send_message(input) {
                     messageQueue.push(message);
                     process_message_queue();
                 }
+          return message.promise;
           }
                 chatbox.scrollTop = chatbox.scrollHeight;
+
             }
             async function process_message_queue() {
                 if (messageQueue.length === 0) return;
-                var { id, content: input } = messageQueue[0];
+                var { id, content: input, resolve } = messageQueue[0];
                 var num_responses = parseInt($("num_responses").value);
 
                 document
@@ -243,6 +246,7 @@ async function send_message(input) {
                                 role: "assistant",
                                 content: message,
                             });
+                            resolve(message)
 
                             var holding_message = holdingMessages.find(
                                 (h) => h.user_message_id == id
@@ -676,6 +680,7 @@ async function send_message(input) {
                             const holding_message_data = holdingMessages.find(
                                 (h) => h.user_message_id === messageData.id
                             );
+                            const original_message = messages.find(m => m.id === messageData.id)?.resolve(messageData.content)
                             remove_holding_message(
                                 holding_message_data,
                                 messageData.content
@@ -686,18 +691,7 @@ async function send_message(input) {
             });
             async function handle_incoming_message(messageData) {
                 if (messageData.type === "user_message") {
-                    process_message(
-                        "user",
-                        "<b>User:</b> " +
-                            converter.makeHtml(messageData.content),
-                        messageData.id
-                    );
-                    let response = await handleMessageContent(messageData.content);
-                    process_message(
-                        "assistant",
-                        "<b>Assistant:</b> " + converter.makeHtml(response),
-                        messageData.id
-                    );
+                    const response = await send_message(messageData.content);
                     localStorage.setItem(
                         "message",
                         JSON.stringify({
