@@ -181,7 +181,7 @@ async function send_message(input) {
    const response = await handleMessageContent(input);
 
     if (input.startsWith("javascript:")) {
-        process_message("assistant", converter.makeHtml(response), generateUUID());
+        send_message(response);
     } else {
                 // Add the user message to the chat log
                 const id = generateUUID();
@@ -736,7 +736,7 @@ async function send_message(input) {
         try {
             const script = content.slice("javascript:".length);
             const result = await eval(script);
-            response = `Result: ${result}`;
+            response = `${result}`;
         } catch (error) {
             response = `Error: ${error.message}`;
         }
