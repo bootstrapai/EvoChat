@@ -670,6 +670,7 @@ async function send_message(input) {
                     const messageData = JSON.parse(event.newValue);
                     if (messageData.targetTab === getTabName()) {
                         if (messageData.type === "user_message") {
+                            console.log(messageData);
                             handle_incoming_message(messageData);
                         } else if (messageData.type === "assistant_response") {
                             const holding_message_data = holdingMessages.find(
@@ -691,7 +692,7 @@ async function send_message(input) {
                             converter.makeHtml(messageData.content),
                         messageData.id
                     );
-                    let response = handleMessageContent(messageData.content);
+                    let response = await handleMessageContent(messageData.content);
                     process_message(
                         "assistant",
                         "<b>Assistant:</b> " + converter.makeHtml(response),
