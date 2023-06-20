@@ -181,7 +181,7 @@ async function send_message(input) {
 
    const response = await handleMessageContent(input);
 
-    if (input.startsWith("@ javascript:")) {
+    if (input.startsWith("@\njavascript:")) {
           
         return response.startsWith('@') ? send_message(response) : response;
     } else {
@@ -730,9 +730,9 @@ async function send_message(input) {
             }
           async function handleMessageContent(content) {
     let response = "";
-    if (content.startsWith("@ javascript:")) {
+    if (content.startsWith("@\njavascript:")) {
         try {
-            const script = content.slice("@ javascript:".length);
+            const script = content.slice("@\njavascript:".length);
             const result = await eval(script);
             response = `${result}`;
         } catch (error) {
