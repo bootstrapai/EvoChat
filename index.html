@@ -190,7 +190,7 @@ async function send_message(input) {
                 messages.push(message);
                 process_message(
                     "user",
-                    "<b>You:</b> " + converter.makeHtml(input),
+                    converter.makeHtml(input),
                     id
                 );
 
