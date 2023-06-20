@@ -176,15 +176,19 @@ async function send_message(input) {
       "```html\n" + editor.getValue() + "\n```"
     );
     $("user_input").value = "";
+    input = input.startsWith('@') ? input : '@ ' + input
   }
 
    const response = await handleMessageContent(input);
 
-    if (input.startsWith("javascript:")) {
-        return send_message(response);
+    if (input.startsWith("@ javascript:")) {
+          
+        return response.startsWith('@') ? send_message(response) : response;
     } else {
                 // Add the user message to the chat log
                 const id = generateUUID();
+                const nameMatch = input.match(/^@(\w+)/);
+                input = input.startsWith('@ ') ? input.slice(2) : input
                 const message = { id, role: "user", content: input };
                 message.promise = new Promise(r => message.resolve = r);
                 messages.push(message);
@@ -199,10 +203,9 @@ async function send_message(input) {
                 $("chatbox").appendChild(holding_message.holding_message);
                 holdingMessages.push(holding_message);
                 // Check if the message starts with @name
-                const nameMatch = input.match(/^@(\w+)/);
                 if (nameMatch) {
                     const tabName = nameMatch[1];
-                    input = input.replace(`@${tabName}`, "").trim();
+                    input = input.replace(`${tabName}`, "").trim();
                     const queryParams = new URLSearchParams(
                         input.split("?")[1]
                     );
@@ -219,6 +222,7 @@ async function send_message(input) {
                         })
                     );
                 } else {
+          			
                     messageQueue.push(message);
                     process_message_queue();
                 }
@@ -726,9 +730,9 @@ async function send_message(input) {
             }
           async function handleMessageContent(content) {
     let response = "";
-    if (content.startsWith("javascript:")) {
+    if (content.startsWith("@ javascript:")) {
         try {
-            const script = content.slice("javascript:".length);
+            const script = content.slice("@ javascript:".length);
             const result = await eval(script);
             response = `${result}`;
         } catch (error) {
