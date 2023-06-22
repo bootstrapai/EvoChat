@@ -303,6 +303,8 @@ window.agents = new AgentManager();
                 this.input = this.shadowRoot.querySelector('input');
                 this.sendButton = this.shadowRoot.querySelector('button');
                 this.agentManager = agents
+      
+      			window.send = this.sendMessage.bind(this)
             }
 
             connectedCallback() {
@@ -314,8 +316,8 @@ window.agents = new AgentManager();
                 });
             }
 
-            async sendMessage() {
-                const message = this.input.value.trim();
+            async sendMessage(message) {
+                message ||= this.input.value.trim();
                 if (!message) return;
 
                 const messageObj = parseTo(message);
@@ -346,7 +348,8 @@ window.agents = new AgentManager();
                 this.chatContainer.appendChild(agentMessage);
 
                 this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
-            }
+            	return response.content
+      		}
         });
     </script>
 </body>
