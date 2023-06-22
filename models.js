@@ -20,7 +20,7 @@ class Model {
 
 
 class GPT extends Model {
-  constructor(config) {
+  constructor(config = {model: 'gpt-4'}) {
     super(config);
 
     if (config.system) {
