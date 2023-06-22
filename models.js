@@ -79,3 +79,19 @@ class GPT extends Model {
     }
   }
 }
+
+class Console extends Model {
+  constructor(config) {
+    super(config);
+  }
+
+  async _request(obj) {
+    const wrappedContent = `(async () => { ${obj.content} })()`;
+    try {
+      const result = await eval(wrappedContent);
+      return { content: result };
+    } catch (error) {
+      return { content: `Error: ${error.message}` };
+    }
+  }
+}
