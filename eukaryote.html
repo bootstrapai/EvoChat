@@ -141,7 +141,7 @@ class GPT extends Model {
             apiKey,
             model,
             temperature,
-            top_p,
+            topP,
             presencePenalty,
             frequencyPenalty,
             maxTokens,
@@ -216,7 +216,7 @@ class AgentManager {
   load() {
     const stored = JSON.parse(localStorage.getItem("instances")) || [];
     for (const { name, classDefinition, config } of stored) {
-      this.registerInstance(name, modelConstructors[classDefinition], config);
+      this.register(name, classDefinition, config);
     }
   }
 
@@ -226,18 +226,19 @@ class AgentManager {
       classDefinition: instance.constructor.name,
       config: instance.config,
     }));
-    localStorage.setItem("instances", JSON.stringify(instancesToStore));
+    localStorage.setItem("instances", JSON.stringify(toStore));
   }
 
   register(name, classDefinition, config) {
+    classDefinition = modelConstructors[classDefinition]
     const instance = new classDefinition(config);
     this.instances.set(name, instance);
-    this.saveInstancesToLocalStorage();
+    this.save();
   }
 
   delete(name) {
     this.instances.delete(name);
-    this.saveInstancesToLocalStorage();
+    this.save();
   }
 
   async request(obj) {
@@ -270,13 +271,13 @@ function parseTo(message) {
   const to = message.match(/^@(\w+)/);
   if (to) {
     return {
-      to,
+      to: to[1],
       content: message.replace(/^@\w+\s*/, ''),
     };
   }
   return { content: message };
 }
-      
+window.agents = new AgentManager();
         customElements.define('chat-message', class ChatMessage extends HTMLElement {
             constructor() {
                 super();
@@ -301,7 +302,7 @@ function parseTo(message) {
                 this.chatContainer = this.shadowRoot.querySelector('.chat-container');
                 this.input = this.shadowRoot.querySelector('input');
                 this.sendButton = this.shadowRoot.querySelector('button');
-                this.agentManager = new AgentManager();
+                this.agentManager = agents
             }
 
             connectedCallback() {
