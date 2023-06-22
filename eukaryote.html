@@ -12,6 +12,12 @@
             --system-color: #f5a623;
         }
     </style>
+        <script type="module">
+            import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
+            import { createOrUpdateTextFile } from "https://cdn.skypack.dev/@octokit/plugin-create-or-update-text-file";
+            window.Octokit = Octokit;
+            window.createOrUpdateTextFile = createOrUpdateTextFile;
+        </script>
 </head>
 <body>
     <chat-app></chat-app>
@@ -122,6 +128,62 @@ class Model {
         return responseObj;
     }
 }
+class Github extends Model {
+    constructor(config) {
+        super(config);
+      
+        const MyOctokit = Octokit.plugin(createOrUpdateTextFile);
+        this.octokit = new MyOctokit({ auth: config.token })
+        this.org = config.org;
+        this.repo = config.repo;
+        this.branch = config.branch;
+    }
+
+    async _request(obj) {
+        const content = obj.content.trim();
+        const lines = content.split("\n");
+
+        if (lines.length === 1) {
+            const filePath = lines[0];
+            return await this.getFile(filePath);
+        } else {
+            const filePath = lines[0];
+            const fileContent = lines.slice(1).join("\n");
+            return await this.createOrUpdateFile(filePath, fileContent);
+        }
+    }
+
+    async getFile(filePath) {
+        try {
+            const response = await this.octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+                owner: this.org,
+                repo: this.repo,
+                path: filePath,
+                ref: this.branch
+            });
+
+            const fileContent = atob(response.data.content);
+            return { content: fileContent };
+        } catch (error) {
+            return { content: `Error: Unable to get file. Status ${error.status}` };
+        }
+    }
+
+    async createOrUpdateFile(path, content) {
+      const { updated, data } = await my_octokit.createOrUpdateTextFile({
+        owner: this.org,
+        repo: this.repo,
+        path,
+        content,
+        message,
+      });
+      if (updated) {
+      	return { content:  `Successfully committed the content to ${file}` };
+      } else {
+      	return { content: "Failed to commit the content." };
+      }
+    }
+}
 
 class GPT extends Model {
     constructor(config = { model: "gpt-4" }) {
@@ -203,9 +265,11 @@ class Console extends Model {
 }
 
 const modelConstructors = {
-  GPT,
-  Console,
+    GPT,
+    Console,
+    Github,
 };
+
 class AgentManager {
   constructor(defaultInstance = new Console()) {
     this.instances = new Map();
