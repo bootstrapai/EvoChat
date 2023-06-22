@@ -12,12 +12,6 @@
             --system-color: #f5a623;
         }
     </style>
-        <script type="module">
-            import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
-            import { createOrUpdateTextFile } from "https://cdn.skypack.dev/@octokit/plugin-create-or-update-text-file";
-            window.Octokit = Octokit;
-            window.createOrUpdateTextFile = createOrUpdateTextFile;
-        </script>
 </head>
 <body>
     <chat-app></chat-app>
@@ -78,6 +72,14 @@
                 align-items: center;
                 margin-bottom: 10px;
             }
+            .message-content {
+                border-radius: 20px;
+                padding: 10px 20px;
+                font-size: 16px;
+                max-width: 80%;
+                background-color: var(--agent-color);
+                color: white;
+            }
             .message.user .message-content,
             .message.agent .message-content,
             .message.system .message-content {
@@ -110,7 +112,12 @@
         </div>
     </template>
 
-    <script>
+    <script type="module">
+      
+            import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
+            import { createOrUpdateTextFile } from "https://cdn.skypack.dev/@octokit/plugin-create-or-update-text-file";
+            window.Octokit = Octokit;
+            window.createOrUpdateTextFile = createOrUpdateTextFile;
 class Model {
     constructor(config) {
         this.config = config;
@@ -278,10 +285,14 @@ class AgentManager {
   }
 
   load() {
-    const stored = JSON.parse(localStorage.getItem("instances")) || [];
-    for (const { name, classDefinition, config } of stored) {
-      this.register(name, classDefinition, config);
-    }
+      const stored = JSON.parse(localStorage.getItem("instances")) || [];
+      for (const { name, classDefinition, config } of stored) {
+		try {
+            this.register(name, classDefinition, config);
+        } catch (e) {
+			alert(`${name} failed to load... lost it.`)
+        }
+      }
   }
 
   save() {
@@ -350,11 +361,12 @@ window.agents = new AgentManager();
             }
 
             connectedCallback() {
-                this.shadowRoot.querySelector('.message').classList.add(this.getAttribute('label'));
-                this.shadowRoot.querySelector('.message-content').textContent = this.getAttribute('content');
-                if (this.getAttribute('timer')) {
-                    this.shadowRoot.querySelector('.timer').textContent = this.getAttribute('timer');
-                }
+              this.shadowRoot.querySelector('.message').classList.add(this.getAttribute('label'));
+              this.shadowRoot.querySelector('.message-content').textContent = this.getAttribute('content');
+              //this.shadowRoot.querySelector('.message-label').textContent = this.getAttribute('label');
+              if (this.getAttribute('timer')) {
+                  this.shadowRoot.querySelector('.timer').textContent = this.getAttribute('timer');
+              }
             }
         });
 
