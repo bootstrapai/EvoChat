@@ -150,7 +150,7 @@
                     mode: "xml",
                     theme: "default",
                     lineNumbers: true,
-                    value: initialHTML,
+                    value: '',
                     viewportMargin: Infinity,
                     height: "100%",
                 });
@@ -168,6 +168,25 @@
                         $(id).value = value;
                     }
                 });
+          
+          const token = $("token").value; const repo_info = $("repo").value.split("/");
+
+if (repo_info.length === 3) {
+    const octokit = new Octokit({ auth: token });
+    try {
+        const { data } = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+            owner: repo_info[0],
+            repo: repo_info[1],
+            path: repo_info[2],
+        });
+        const fileContent = atob(data.content);
+        editor.setValue(fileContent);
+    } catch (error) {
+        console.error("Error loading file content:", error);
+    }
+} else {
+    editor.setValue(initialHTML);
+}
             };
 async function send_message(input) {
   if (!input) {
@@ -743,6 +762,7 @@ async function send_message(input) {
     }
     return response;
 }
+
         </script>
     
 
