@@ -209,7 +209,7 @@ const modelConstructors = {
 class AgentManager {
   constructor(defaultInstance = new Console()) {
     this.instances = new Map();
-    this.defaultInstance = defaultInstance || new Console();
+    this.defaultInstance = defaultInstance;
     this.load();
   }
 
