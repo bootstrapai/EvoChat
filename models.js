@@ -15,6 +15,7 @@ class Model {
         return responseObj;
     }
 }
+
 class GPT extends Model {
     constructor(config = { model: "gpt-4" }) {
         super(config);
@@ -98,7 +99,6 @@ const modelConstructors = {
   GPT,
   Console,
 };
-
 class AgentManager {
   constructor(defaultInstance = null) {
     this.instances = new Map();
@@ -106,15 +106,15 @@ class AgentManager {
     this.loadInstancesFromLocalStorage();
   }
 
-  loadInstancesFromLocalStorage() {
-    const storedInstances = JSON.parse(localStorage.getItem("instances")) || [];
-    for (const { name, classDefinition, config } of storedInstances) {
+  load() {
+    const stored = JSON.parse(localStorage.getItem("instances")) || [];
+    for (const { name, classDefinition, config } of stored) {
       this.registerInstance(name, modelConstructors[classDefinition], config);
     }
   }
 
-  saveInstancesToLocalStorage() {
-    const instancesToStore = Array.from(this.instances.entries()).map(([name, instance]) => ({
+  save() {
+    const toStore = Array.from(this.instances.entries()).map(([name, instance]) => ({
       name,
       classDefinition: instance.constructor.name,
       config: instance.config,
@@ -122,46 +122,34 @@ class AgentManager {
     localStorage.setItem("instances", JSON.stringify(instancesToStore));
   }
 
-  registerInstance(name, classDefinition, config) {
+  register(name, classDefinition, config) {
     const instance = new classDefinition(config);
     this.instances.set(name, instance);
     this.saveInstancesToLocalStorage();
   }
 
-  deleteInstance(name) {
+  delete(name) {
     this.instances.delete(name);
     this.saveInstancesToLocalStorage();
   }
 
-  async request(message, from = 'user') {
-    const instanceNameMatch = message.match(/^@(\w+)/);
+  async request(obj) {
+    const { to } = obj;
     let instance;
-    let to;
 
-    if (instanceNameMatch) {
-      to = instanceNameMatch[1];
+    if (to) {
       instance = this.instances.get(to);
-
       if (!instance) {
-        return `Error: Instance "${to}" not found.`;
+        return { ...obj, content: `Error: Instance "${to}" not found.` };
       }
-
-      message = message.replace(/^@\w+\s*/, '');
     } else {
       instance = this.defaultInstance;
     }
 
-    const requestObj = {
-      uuid: generateUUID(),
-      from,
-      to,
-      content: message,
-    };
-
-    const responseObj = await instance.request(requestObj);
-    return responseObj.content;
+    return instance.request(obj);
   }
 }
+
 
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -169,4 +157,15 @@ function generateUUID() {
         v = c == 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
+}
+                      
+function parseTo(message) {
+  const to = message.match(/^@(\w+)/);
+  if (to) {
+    return {
+      to,
+      content: message.replace(/^@\w+\s*/, ''),
+    };
+  }
+  return { content: message };
 }
