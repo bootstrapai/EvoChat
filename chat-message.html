@@ -1,0 +1,59 @@
+<template id="chat-message-template">
+ <style>
+  chat-message {
+      display: block;
+      padding: 10px;
+  }
+  .message {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+  }
+  .message.user .message-content,
+  .message.agent .message-content,
+  .message.system .message-content {
+      border-radius: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      max-width: 80%;
+  }
+  .message.user .message-content {
+      background-color: var(--user-color);
+      color: white;
+      margin-left: auto;
+  }
+  .message.agent .message-content {
+      background-color: var(--agent-color);
+      color: white;
+  }
+  .message.system .message-content {
+      background-color: var(--system-color);
+      color: white;
+  }
+  .message .timer {
+      font-size: 12px;
+      margin-left: 5px;
+  }
+ </style>
+ <div class="message">
+  <div class="message-content"></div>
+  <div class="timer"></div>
+ </div>
+</template>
+<script>
+ customElements.define('chat-message', class ChatMessage extends HTMLElement {
+     constructor() {
+         super();
+         this.attachShadow({ mode: 'open' });
+         this.shadowRoot.appendChild(document.getElementById('chat-message-template').content.cloneNode(true));
+     }
+
+     connectedCallback() {
+         this.shadowRoot.querySelector('.message').classList.add(this.getAttribute('label'));
+         this.shadowRoot.querySelector('.message-content').textContent = this.getAttribute('content');
+         if (this.getAttribute('timer')) {
+             this.shadowRoot.querySelector('.timer').textContent = this.getAttribute('timer');
+         }
+     }
+ });
+</script>
